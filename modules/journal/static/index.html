@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trades · Journal · OptionDash</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<link rel="stylesheet" href="/journal/static/css/app.css">
+<script src="/shared/nav.js"></script>
+<script src="/shared/accounts.js"></script>
+<script src="/shared/vendor/plotly.min.js"></script>
+<script src="/journal/static/js/format.js"></script>
+<script src="/journal/static/js/filters.js"></script>
+<script src="/journal/static/js/strategies.js"></script>
+<script src="/journal/static/js/payoff.js"></script>
+<script src="/journal/static/js/ui.js"></script>
+<script src="/journal/static/js/api.js"></script>
+<script src="/journal/static/js/charts.js"></script>
+<script src="/journal/static/js/legrows.js"></script>
+<script src="/journal/static/js/fills.js"></script>
+<script src="/journal/static/js/laterfills.js"></script>
+<script src="/journal/static/js/laterui.js"></script>
+<script src="/journal/static/js/journal.js"></script>
+<script src="/journal/static/js/prefill.js"></script>
+<script src="/journal/static/js/broker.js"></script>
+<script src="/journal/static/js/accountpick.js"></script>
+<script src="/journal/static/js/bulkmove.js" defer></script>
+<script src="/journal/static/js/list.js" defer></script>
+<script src="/journal/static/js/form.js" defer></script>
+<script src="/journal/static/js/ibkr.js" defer></script>
+<script src="/journal/static/js/panels.js" defer></script>
+</head>
+<body>
+<main>
+  <div class="jr-head">
+    <h1>Trades</h1>
+    <span class="grow"></span>
+    <span id="account-picker"></span>
+  </div>
+  <section class="card"><div class="stats" id="headline"></div></section>
+
+  <div id="new-trade" class="new-trade hidden" aria-label="New trade">
+  <h1>New trade</h1>
+
+  <section class="card">
+    <div class="card-h"><h2>Position</h2></div>
+    <div class="card-b row">
+      <div class="field"><label for="underlying">Underlying</label>
+        <input id="underlying" type="text" maxlength="10" placeholder="SPY" style="width:100px;text-transform:uppercase;font-weight:600" autocomplete="off"></div>
+      <div class="field"><label for="opened">Opened</label><input id="opened" type="date"></div>
+      <div class="field"><label for="strategy">Strategy</label><select id="strategy" style="min-width:200px"></select></div>
+      <div class="field"><label for="account">Account</label><select id="account" style="min-width:140px"></select></div>
+      <div class="field"><label for="contracts">Contracts</label><input id="contracts" type="number" min="1" step="1" value="1" style="width:80px"></div>
+      <div class="field"><label for="exp-front">Expiry</label><input id="exp-front" type="date"></div>
+      <div class="field hidden" id="exp-back-wrap"><label for="exp-back">Back expiry</label><input id="exp-back" type="date"></div>
+      <span class="grow"></span>
+      <span class="note" style="max-width:320px">Fill price is per share, as quoted (e.g. 1.25). Commission is the $ total for that leg.</span>
+    </div>
+    <div class="table-wrap">
+      <table class="t" id="legs"><thead></thead><tbody></tbody></table>
+    </div>
+    <div class="card-b row">
+      <button class="btn sm" id="add-leg" type="button">+ Add leg</button>
+      <span class="grow"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Later closes &amp; adjustments</h2><span class="note">Backfilling? Add each later close with its own date. Rows start at what is still open; change the qty for a partial close.</span></div>
+    <div id="later"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Preview at expiry</h2><span class="note">All legs settled at intrinsic value; calendars are approximate here, the trade page prices them properly.</span></div>
+    <div class="stats" id="preview-stats"></div>
+    <div class="chart sm" id="preview"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Journal</h2></div>
+    <div class="card-b" id="journal"></div>
+  </section>
+
+  <div class="row">
+    <span class="grow"></span>
+    <button class="btn" id="cancel-new" type="button">Cancel</button>
+    <button class="btn primary" id="save" type="button">Save trade</button>
+  </div>
+  </div>
+
+
+  <div id="ibkr-import" class="new-trade hidden" aria-label="Import fills from IBKR">
+  <div class="row" style="align-items:center"><h1>Import fills from IBKR</h1><span class="grow"></span>
+    <button class="btn" id="close-import" type="button">Close</button></div>
+
+  <section class="card">
+    <div class="card-h">
+      <span class="status-dot" id="dot"></span>
+      <h2>TWS connection</h2>
+      <span class="grow"></span>
+      <button class="btn primary sm" id="connect" type="button" disabled>Connect IBKR</button>
+      <button class="btn sm" id="sync" type="button" disabled>Sync fills</button>
+      <button class="btn sm" id="disconnect" type="button" disabled>Disconnect</button>
+    </div>
+    <div class="card-b" style="display:grid;gap:8px">
+      <div id="message" class="mono"></div>
+      <dl class="kv" id="details"></dl>
+      <div class="note">
+        This is the one TWS connection for the whole app: the analyser's market data and these fills share it, and the TWS chip in the nav (bottom of the sidebar) shows the same state.
+        Read-only: nothing places orders. It never connects on its own; each press of Connect (here, in Settings or on the TWS chip) makes one attempt, and nothing polls in the background.
+        TWS only returns executions from the current session, or up to 7 days if you raise <i>Trade Log → show trades for</i> in TWS settings.
+        Older history is not available this way, so sync every few days. Fills already imported are skipped.
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <h2 id="queue-title">Fills waiting for a trade</h2>
+      <span class="grow"></span>
+      <div class="tabs">
+        <button class="tab on" data-status="pending" type="button">Pending</button>
+        <button class="tab" data-status="ignored" type="button">Ignored</button>
+      </div>
+    </div>
+    <div class="card-b" id="queue"></div>
+  </section>
+  </div>
+
+  <section class="card">
+    <div class="card-h">
+      <h2>Trades</h2>
+      <span class="grow"></span>
+      <a class="btn sm" href="/api/journal/export.csv" download="trades.csv" style="display:inline-flex;align-items:center;color:var(--text)">Export CSV</a>
+      <a class="btn sm" id="open-import" href="/journal/?import=1" aria-controls="ibkr-import" aria-expanded="false" style="display:inline-flex;align-items:center;color:var(--text)">Import from IBKR</a>
+      <a class="btn primary sm" id="open-new" href="/journal/?new=1" aria-controls="new-trade" aria-expanded="false" style="display:inline-flex;align-items:center;color:var(--accent-ink)">+ New trade</a>
+    </div>
+    <div class="card-b row" id="filters">
+      <div class="field"><label for="f-status">Status</label>
+        <select id="f-status"><option value="all">All</option><option value="open">Open</option><option value="closed">Closed</option></select></div>
+      <div class="field"><label for="f-underlying">Underlying</label><input id="f-underlying" type="text" placeholder="SPY" style="width:100px;text-transform:uppercase"></div>
+      <div class="field"><label for="f-strategy">Strategy</label><select id="f-strategy"><option value="">All strategies</option></select></div>
+      <div class="field"><label for="f-from">Opened from</label><input id="f-from" type="date"></div>
+      <div class="field"><label for="f-to">to</label><input id="f-to" type="date"></div>
+      <div class="field"><label for="f-tag">Tag</label><input id="f-tag" type="text" placeholder="any tag" style="width:130px"></div>
+      <button class="btn sm" id="f-reset" type="button">Reset</button>
+      <span class="grow"></span>
+      <span class="note" id="count"></span>
+    </div>
+    <div class="card-b row bulk-bar hidden" id="bulk" role="region" aria-label="Selected trades"></div>
+    <div class="table-wrap">
+      <table class="t" id="trades">
+        <thead><tr>
+          <th class="pick"><input type="checkbox" id="pick-all" aria-label="Select all shown trades"></th>
+          <th class="sort" data-key="id">#</th>
+          <th class="sort" data-key="opened_at">Opened</th>
+          <th class="sort" data-key="underlying">Underlying</th>
+          <th class="sort" data-key="strategy">Strategy</th>
+          <th class="sort" data-key="account_name">Account</th>
+          <th>Legs</th>
+          <th class="sort r" data-key="dte_at_entry">DTE</th>
+          <th class="sort r" data-key="days_held">Held</th>
+          <th class="sort" data-key="status">Status</th>
+          <th class="sort r" data-key="pnl">P&amp;L</th>
+          <th class="sort r" data-key="return_on_risk">RoR</th>
+          <th class="sort" data-key="confidence">Conf.</th>
+          <th>Tags</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

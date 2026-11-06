@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio · OptionDash</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<link rel="stylesheet" href="/portfolio/static/portfolio.css">
+<script src="/shared/nav.js"></script>
+<script src="/shared/accounts.js"></script>
+<script src="/portfolio/static/portfolio.js"></script>
+<script src="/portfolio/static/grouping.js"></script>
+<script src="/portfolio/static/cardview.js"></script>
+<script src="/portfolio/static/sections.js" defer></script>
+<script src="/portfolio/static/greeks.js" defer></script>
+<script src="/portfolio/static/drawer.js" defer></script>
+<script src="/portfolio/static/page.js" defer></script>
+</head>
+<body>
+<main class="pf">
+  <div class="pf-head">
+    <h1>Portfolio</h1>
+    <span class="grow"></span>
+    <span class="status" id="asof"></span>
+    <div id="account-picker"></div>
+    <button class="btn" id="open-saved" type="button" title="Upload a CSV of positions for an IBKR account (used when TWS is off) or an Other account">Saved positions</button>
+    <button class="btn" id="refresh" type="button">Refresh</button>
+  </div>
+  <div id="message" class="card pf-msg" hidden><span id="message-text"></span></div>
+  <dialog class="pf-drawer" id="saved" aria-labelledby="saved-title">
+    <div class="pf-drawer-head">
+      <h2 id="saved-title">Saved positions</h2>
+      <span class="grow"></span>
+      <button class="btn" id="close-saved" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="field"><label for="saved-account">Account</label><select id="saved-account"></select></div>
+    <div class="legend-note" id="saved-note"></div>
+    <div class="pf-saved-body">
+      <p class="legend-note">An IBKR account shows its saved positions when TWS is not connected; while TWS is connected every read is saved automatically, so a CSV is only needed the first time or without TWS. An Other account with a CSV source always shows its upload.</p>
+      <ul class="legend-note pf-rules">
+        <li><b>type</b> is <code>stock</code>, <code>call</code> or <code>put</code>. Stocks leave <b>strike</b> and <b>expiry</b> blank; calls and puts need both (expiry as <code>YYYY-MM-DD</code>).</li>
+        <li><b>qty</b> is negative for a short. <b>avg_cost</b> is per share: an option bought at 4.35 is <code>4.35</code>, not 435.</li>
+        <li><b>multiplier</b> (default 100 for options), <b>trading_class</b> (e.g. SPXW) and <b>account</b> are optional.</li>
+      </ul>
+      <div class="pf-upload">
+        <input type="file" id="csv-file" accept=".csv,text/csv">
+        <button class="btn" id="csv-template" type="button">Download template</button>
+      </div>
+      <div class="pf-cash">
+        <div class="field"><label for="cash-cash">Cash</label><input id="cash-cash" inputmode="decimal" placeholder="optional"></div>
+        <div class="field"><label for="cash-net_liquidation">Net liquidation</label><input id="cash-net_liquidation" inputmode="decimal" placeholder="optional"></div>
+        <div class="field"><label for="cash-available_funds">Available funds</label><input id="cash-available_funds" inputmode="decimal" placeholder="optional"></div>
+        <div class="field"><label for="cash-buying_power">Buying power</label><input id="cash-buying_power" inputmode="decimal" placeholder="optional"></div>
+        <div class="field"><label for="cash-currency">Currency</label><input id="cash-currency" class="w70" value="USD" maxlength="3"></div>
+      </div>
+      <div class="pf-upload">
+        <button class="btn primary" id="csv-save" type="button">Save upload</button>
+        <button class="btn" id="csv-clear" type="button">Clear saved</button>
+        <span class="status" id="csv-status"></span>
+      </div>
+      <pre class="pf-errors" id="csv-errors" hidden></pre>
+    </div>
+  </dialog>
+  <section class="card"><div class="stats pf-tiles" id="tiles" aria-label="Totals across the shown accounts"></div></section>
+  <section class="card pf-greekbar">
+    <b>Greeks &amp; live P&amp;L</b>
+    <span class="legend-note" id="greeks-total">Load Greeks prices each underlying once, on request.</span>
+    <span class="grow"></span>
+    <div class="field pf-inline"><label for="rate">Rate %</label><input id="rate" type="number" step="0.1" value="4" class="w70"></div>
+    <div class="field pf-inline"><label for="divy">Div yld %</label><input id="divy" type="number" step="0.1" value="1.3" class="w70"></div>
+    <button class="btn primary" id="load-greeks" type="button" disabled>Load Greeks</button>
+    <div class="pf-note warn" id="greeks-notes" hidden></div>
+  </section>
+  <div id="accounts"></div>
+  <details class="card pf-breakdown">
+    <summary>By underlying and by expiry <span class="legend-note">across the shown accounts</span></summary>
+    <div class="pf-grid">
+      <div><div class="card-h"><h2>By underlying</h2><span class="legend-note">Cost basis, bar = share of gross</span></div>
+        <div class="pf-body" id="by-underlying"></div></div>
+      <div><div class="card-h"><h2>By expiry</h2><span class="legend-note">Option legs only</span></div>
+        <div class="pf-body" id="by-expiry"></div></div>
+    </div>
+  </details>
+  <p class="legend-note">Each account has one source: IBKR reads TWS (else its saved positions), Paper and journal-sourced accounts show their open journal trades, CSV accounts their upload. Broker positions are grouped by the account's open journal trades; what no trade claims is <b>Not in journal</b>. Avg cost is per share; Debit is what you paid to open a trade and Credit what you received, at average cost. Greeks come from the pricing engine with each contract's mark and solved IV ($ delta, theta in $ per day, vega in $ per vol point); unrealised P&amp;L is measured from your fill, and options with no price or IV are counted as unpriced, not guessed.</p>
+</main>
+</body>
+</html>

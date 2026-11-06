@@ -1,0 +1,170 @@
+/* Trade Logger: same visual language as OptionDash (dark, amber accent, mono numbers). */
+/* Design tokens and the common components come from /shared/theme.css (linked first).
+   Only journal-specific tokens and layout live here. */
+:root {
+  --accent-bg: rgba(242, 184, 75, .14);
+}
+html, body { line-height: 1.45; }
+textarea { font: inherit; color: inherit; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.od-nav a:hover, .od-nav .brand:hover { text-decoration: none; }
+.od-nav .brand { color: var(--text); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .faint { color: var(--faint); }
+.hidden { display: none !important; }
+
+main { display: grid; gap: 14px; padding: 14px 18px 48px; max-width: 1500px; margin: 0 auto; }
+/* New trade form, embedded in the Trades page (opened by + New trade). */
+.new-trade { display: grid; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+h1 { font-size: 18px; margin: 0; font-weight: 650; }
+.card { min-width: 0; }
+.card-b { padding: 12px 14px; }
+.note { font-size: 11.5px; color: var(--faint); }
+
+/* ---------- forms ---------- */
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field > label, .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.field input, .field select, .field textarea, .inp {
+  background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 5px 8px; min-height: 30px; width: 100%;
+}
+.field textarea { min-height: 64px; resize: vertical; line-height: 1.45; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+input.bad, select.bad { border-color: var(--neg); }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+
+.btn { background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 6px; height: 30px; padding: 0 12px; cursor: pointer; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.danger { color: var(--neg); border-color: rgba(239, 77, 90, .5); }
+.btn.danger:hover:not(:disabled) { background: var(--neg-bg); border-color: var(--neg); }
+.btn.sm { height: 26px; padding: 0 9px; font-size: 12px; }
+.iconbtn { background: transparent; border: 1px solid var(--line-2); color: var(--muted); border-radius: 5px; height: 26px; padding: 0 8px; cursor: pointer; }
+.iconbtn:hover { color: var(--text); border-color: var(--muted); }
+.iconbtn.del:hover { color: var(--neg); border-color: var(--neg); }
+.side { width: 58px; height: 28px; border-radius: 5px; border: 1px solid; cursor: pointer; font-weight: 700; font-size: 11.5px; letter-spacing: .05em; background: transparent; }
+.side.long { color: var(--pos); border-color: rgba(47, 191, 113, .5); background: var(--pos-bg); }
+.side.short { color: var(--neg); border-color: rgba(239, 77, 90, .5); background: var(--neg-bg); }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; }
+table.t { width: 100%; border-collapse: collapse; }
+table.t th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); font-weight: 600; text-align: left; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.t th.r, table.t td.r { text-align: right; }
+table.t th.sort { cursor: pointer; user-select: none; }
+table.t th.sort:hover { color: var(--text); }
+table.t th.sort.on { color: var(--accent); }
+table.t td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.t tbody tr.click { cursor: pointer; }
+table.t tbody tr.click:hover td { background: var(--panel-2); }
+table.t td input, table.t td select { background: var(--bg); border: 1px solid var(--line-2); border-radius: 5px; padding: 3px 6px; height: 28px; width: 100%; }
+table.t tr.sub td { background: var(--bg); font-size: 12px; padding: 5px 8px; }
+.empty { padding: 28px 14px; text-align: center; color: var(--faint); }
+
+/* ---------- chips & tags ---------- */
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; font-size: 11px; border-radius: 10px; border: 1px solid var(--line-2); color: var(--muted); white-space: nowrap; }
+.chip.open { color: var(--accent); border-color: rgba(242, 184, 75, .45); background: var(--accent-bg); }
+.chip.closed { color: var(--muted); }
+.chip.emotion { color: var(--blue); border-color: rgba(110, 168, 254, .4); }
+.chip.mistake { color: var(--neg); border-color: rgba(239, 77, 90, .4); }
+.chip.ev { font-family: var(--mono); text-transform: uppercase; font-size: 10px; letter-spacing: .05em; }
+.chips { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.chip-input { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 6px; min-height: 30px; }
+.chip-input:focus-within { border-color: var(--accent); }
+.chip-input input { border: 0; background: transparent; min-width: 90px; flex: 1; padding: 2px; }
+.chip-input input:focus { outline: none; }
+.chip button { background: none; border: 0; color: inherit; cursor: pointer; padding: 0; font-size: 12px; line-height: 1; }
+.suggest { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.suggest button { height: 20px; padding: 0 7px; font-size: 11px; background: transparent; border: 1px dashed var(--line-2); border-radius: 10px; color: var(--faint); cursor: pointer; }
+.suggest button:hover { color: var(--text); border-color: var(--muted); }
+.stars { color: var(--accent); letter-spacing: 1px; white-space: nowrap; }
+.star-input { display: inline-flex; gap: 2px; }
+.star-input button { background: none; border: 0; cursor: pointer; font-size: 18px; color: var(--faint); padding: 0 1px; }
+.star-input button.on { color: var(--accent); }
+
+/* ---------- stats strip ---------- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.stat { padding: 12px 14px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; margin: 0 -1px -1px 0; }
+.stat .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.stat .v { font: 600 18px/1.3 var(--mono); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat .s { font-size: 11px; color: var(--faint); font-family: var(--mono); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- tabs & charts ---------- */
+.tabs { display: flex; gap: 2px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--line); }
+.tab { border: 0; background: transparent; padding: 5px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+.tab.on { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2); }
+.chart { height: 420px; }
+.chart.sm { height: 300px; }
+.chart.xs { height: 220px; }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.charts .wide { grid-column: 1 / -1; }
+
+/* ---------- toast & modal ---------- */
+#toasts { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 100; max-width: min(440px, calc(100vw - 32px)); }
+.toast { background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--blue); border-radius: 8px; padding: 10px 12px; box-shadow: var(--shadow-pop); display: flex; gap: 10px; align-items: flex-start; }
+.toast.err { border-left-color: var(--neg); }
+.toast.ok { border-left-color: var(--pos); }
+.toast .msg { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.toast button { background: none; border: 0; color: var(--muted); cursor: pointer; }
+.overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px; z-index: 50; overflow-y: auto; }
+.modal { background: var(--panel); border: 1px solid var(--line-2); border-radius: 12px; width: min(920px, 100%); box-shadow: var(--shadow-pop); }
+.modal.narrow { width: min(460px, 100%); }
+.modal .card-b { display: grid; gap: 12px; }
+.modal-f { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.lightbox img { max-width: 100%; max-height: 80vh; display: block; margin: 0 auto; border-radius: 6px; }
+
+/* ---------- screenshots ---------- */
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.shot { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.shot img { width: 100%; height: 120px; object-fit: cover; cursor: zoom-in; display: block; }
+.shot .cap { padding: 6px 8px; font-size: 11.5px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.shot .cap span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dropzone { border: 1px dashed var(--line-2); border-radius: 8px; padding: 12px; color: var(--faint); font-size: 12px; text-align: center; }
+.dropzone.over { border-color: var(--accent); color: var(--text); }
+
+/* ---------- misc ---------- */
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 12.5px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--faint); }
+.status-dot.on { background: var(--pos); box-shadow: 0 0 0 3px var(--pos-bg); }
+.group { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.group + .group { margin-top: 10px; }
+.group-h { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.group-f { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; }
+.group-f select { background: var(--panel); border: 1px solid var(--line-2); border-radius: 6px; height: 28px; padding: 0 6px; }
+.dirty { color: var(--accent); font-size: 11.5px; }
+
+@media (max-width: 900px) {
+  .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid2, .charts { grid-template-columns: 1fr; }
+  .chart { height: 340px; }
+  main { padding: 12px 10px 40px; }
+}
+
+/* ---------- inline form errors & warnings ---------- */
+.form-error { border: 1px solid rgba(239,77,90,.5); background: var(--neg-bg, rgba(239,77,90,.14)); color: var(--neg);
+  border-radius: 6px; padding: 8px 10px; font-size: 12px; white-space: pre-line; }
+.warn-note { color: var(--accent); font-size: 11.5px; }
+
+/* ---------- engine charts (trade page) ---------- */
+.greeks-strip { border-bottom: 1px solid var(--line); }
+#engine-controls { border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+#engine-controls input[type=range] { accent-color: var(--accent); }
+
+/* ---------- later closes on the new-trade form ---------- */
+.later-block { border-top: 1px solid var(--line); }
+.later-summary { padding: 0 14px 12px; display: grid; gap: 2px; font-family: var(--mono); }
+.later-summary:empty { display: none; }
+
+/* ---------- accounts: page header picker, row checkboxes, bulk move bar ---------- */
+.jr-head { display: flex; align-items: center; gap: 12px; }
+table.t th.pick, table.t td.pick { width: 28px; padding-right: 0; }
+table.t td.pick input, table.t th.pick input { width: auto; height: auto; accent-color: var(--accent); cursor: pointer; }
+table.t tbody tr.picked td { background: var(--accent-bg); }
+.bulk-bar { align-items: center; gap: 8px; border-top: 1px solid var(--line); background: var(--panel-2); }
+.bulk-bar .inp, .title-account .inp { width: auto; min-height: 26px; height: 26px; padding: 2px 8px; }
+.title-account { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }

@@ -1,0 +1,10 @@
+# Your trade data stays local and out of git
+data/
+.env
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/

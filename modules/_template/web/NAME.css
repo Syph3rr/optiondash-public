@@ -1,0 +1,5 @@
+.mod { display: grid; gap: 14px; padding: 18px 22px 48px; max-width: 1400px; margin: 0 auto; }
+.mod-head { display: flex; align-items: center; gap: 12px; }
+.mod-head h1 { margin: 0; font-size: 18px; font-weight: 650; }
+.mod-msg { padding: 14px 16px; color: var(--muted); }
+.mod-msg.err { color: var(--neg); }

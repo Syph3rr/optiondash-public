@@ -1,0 +1,10 @@
+/target
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+.env
+
+# Your journal (trades.db, screenshots, backups) is created on first run and stays local.
+/data/

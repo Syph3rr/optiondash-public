@@ -1,0 +1,30 @@
+.ch { display: grid; gap: 14px; padding: 18px 22px 48px; max-width: 1400px; margin: 0 auto; }
+.ch-head { display: flex; align-items: center; gap: 12px; }
+.ch-head h1 { margin: 0; font-size: 18px; font-weight: 650; }
+.ch-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 14px 16px; }
+.ch-msg { padding: 14px 16px; color: var(--muted); }
+.ch-msg.err { color: var(--neg); }
+.ch .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 900px) { .ch .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ch-pane { padding: 4px 0 8px; }
+.ch-scroll { overflow: auto; max-height: 68vh; }
+.ch-plot { height: 380px; }
+.ch-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.ch-empty { padding: 28px 14px; text-align: center; color: var(--faint); }
+table.ch-chain { width: 100%; border-collapse: collapse; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+table.ch-chain th { position: sticky; top: 0; background: var(--panel); font: 600 10.5px var(--sans); text-transform: uppercase;
+  letter-spacing: .07em; color: var(--muted); padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); }
+table.ch-chain th.side-c { color: var(--pos); } table.ch-chain th.side-p { color: var(--neg); }
+table.ch-chain td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--line); }
+table.ch-chain td.strike { text-align: center; font-weight: 700; background: var(--panel-2); color: var(--text); }
+table.ch-chain tr.atm td { background: var(--accent-bg); }
+table.ch-chain tr.atm td.strike { color: var(--accent); }
+table.ch-chain tbody tr:hover td { background: var(--panel-2); }
+table.ch-chain th.sort { cursor: pointer; user-select: none; }
+table.ch-chain th.sort:hover, table.ch-chain th.sort.on { color: var(--accent); }
+table.ch-chain td.left, table.ch-chain th.left { text-align: left; }
+.dim { color: var(--faint); }
+
+/* ---------- Chart tab: TradingView's embedded chart (its own search box and toolbar) */
+.ch-tv { height: min(620px, 70vh); min-height: 380px; padding: 0 12px; }
+.ch-tv-note { margin: 6px 14px 0; }

@@ -1,0 +1,76 @@
+/* Journal analytics cards on Home (the old Dashboard page). Home loads this; it is scoped to
+   card bodies so it cannot restyle the rest of Home. Charts and stats come from the journal's
+   own scripts (dashboard.js, charts.js, barlist.js, ui.js). */
+.wd-body.jx-flush { padding: 0; }
+.wd-body .chart { height: 260px; }
+.wd-body .chart.sm { height: 260px; }
+.wd-body .chart.eq { height: 320px; padding: 4px 4px 0 0; }
+.wd-body .empty { padding: 28px 14px; text-align: center; color: var(--faint); }
+.wd-body .table-wrap { overflow-x: auto; }
+.wd-body .inp { background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 5px 8px; min-height: 30px; }
+.wd-body .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.wd-body .pos { color: var(--pos); } .wd-body .neg { color: var(--neg); }
+.jx-pick { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+
+/* ---------- Performance: twelve tiles in an even grid that follows the card's own width:
+   6x2 wide, 4x3 medium, 3x4 narrow, 2x6 on a phone. Never a ragged last row. */
+.wd-body.jx-kpis { container-type: inline-size; }
+.wd-body .stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@container (max-width: 900px) { .wd-body .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@container (max-width: 600px) { .wd-body .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container (max-width: 400px) { .wd-body .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.wd-body .stat { padding: 12px 14px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; margin: 0 -1px -1px 0; }
+.wd-body .stat .v { font-size: clamp(15px, 1.5vw, 20px); }
+
+/* ---------- Bar lists (P&L by group, open risk): label | bar on a shared zero line | value. */
+.bl { display: grid; gap: 2px; padding: 8px 14px 12px; }
+.bl-row { display: grid; grid-template-columns: minmax(80px, 38%) minmax(40px, 1fr) auto; align-items: center; gap: 10px; min-height: 34px; }
+.bl-label { min-width: 0; display: grid; }
+.bl-name { font-size: 12.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl-sub { font: 10.5px var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl-track { position: relative; height: 14px; }
+.bl-track::before { content: ""; position: absolute; left: var(--zero, 0); top: -4px; bottom: -4px; border-left: 1px solid var(--line-2); }
+.bl-bar { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.bl-bar.pos { background: var(--pos); } .bl-bar.neg { background: var(--neg); } .bl-bar.info { background: var(--blue); }
+.bl-val { font-size: 12.5px; text-align: right; min-width: 64px; white-space: nowrap; }
+.jx-total { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px 4px; flex-wrap: wrap; }
+.jx-total .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.jx-total .v { font-size: 18px; font-weight: 600; }
+.jx-total .s { font: 11px var(--mono); }
+
+/* ---------- P&L calendar: one month, Mon-Fri plus a week total, like a broker statement. */
+.cal-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.cal-month { font-size: 13.5px; font-weight: 600; min-width: 116px; text-align: center; }
+.cal-nav { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--panel-2); color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; }
+.cal-nav:hover { color: var(--text); border-color: var(--muted); }
+.cal-sum { font-size: 13px; white-space: nowrap; }
+.cal-sum .s { font: 11px var(--mono); color: var(--faint); }
+.cal-grid { display: grid; gap: 4px; }
+.cal-dow { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); padding: 0 6px 2px; }
+.cal-day, .cal-week { min-height: 58px; border-radius: 6px; border: 1px solid var(--line); padding: 5px 7px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cal-day .d { font: 10.5px var(--mono); color: var(--faint); }
+.cal-day .v, .cal-week .v { font-size: 12.5px; font-weight: 600; margin-top: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-day .t, .cal-week .t { font: 10px var(--mono); color: var(--faint); white-space: nowrap; }
+.cal-day.out { opacity: .35; border-style: dashed; }
+.cal-day.pos, .cal-week.pos { background: var(--pos-bg); border-color: transparent; } .cal-day.pos .v, .cal-week.pos .v { color: var(--pos); }
+.cal-day.neg, .cal-week.neg { background: var(--neg-bg); border-color: transparent; } .cal-day.neg .v, .cal-week.neg .v { color: var(--neg); }
+.cal-day.today { box-shadow: inset 0 0 0 1px var(--accent); }
+.cal-week { background: var(--panel-2); justify-content: center; }
+
+/* ---------- Open trades */
+table.ot td { vertical-align: top; padding: 8px 12px; }
+table.ot th { padding: 8px 12px; }
+.ot-sym { font-weight: 600; color: var(--text); text-decoration: none; }
+.ot-sym:hover { color: var(--accent); }
+.ot-sub { display: block; font: 10.5px var(--mono); color: var(--faint); margin-top: 1px; }
+.ot-sub.warn { color: var(--accent); }
+.ot-more { display: block; padding: 10px 14px; font-size: 12px; color: var(--blue); text-decoration: none; }
+.ot-more:hover { text-decoration: underline; }
+
+/* Error toasts raised by the journal's API helper. */
+#toasts { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 100; max-width: min(440px, calc(100vw - 32px)); }
+.toast { background: var(--panel-2); border: 1px solid var(--line-2); border-left: 3px solid var(--blue); border-radius: 8px; padding: 10px 12px; box-shadow: var(--shadow-pop); display: flex; gap: 10px; align-items: flex-start; }
+.toast.err { border-left-color: var(--neg); }
+.toast.ok { border-left-color: var(--pos); }
+.toast .msg { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.toast button { background: none; border: 0; color: var(--muted); cursor: pointer; }

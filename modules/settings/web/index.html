@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · OptionDash</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<link rel="stylesheet" href="/settings/static/settings.css">
+<script src="/shared/nav.js"></script>
+<script src="/shared/accounts.js"></script>
+<script src="/settings/static/tws.js" defer></script>
+<script src="/settings/static/accountscard.js" defer></script>
+<script src="/settings/static/page.js" defer></script>
+</head>
+<body>
+<main class="st">
+  <div class="st-head"><h1>Settings</h1><span class="grow"></span><span class="status" id="saved" role="status" aria-live="polite"></span></div>
+
+  <section class="card">
+    <div class="card-h"><h2>Appearance</h2></div>
+    <div class="st-body">
+      <div class="st-row">
+        <div class="st-label">Theme<span class="st-hint">System follows your computer's light or dark setting.</span></div>
+        <div class="tabs" id="theme" role="radiogroup" aria-label="Theme">
+          <button class="tab" type="button" role="radio" data-theme-choice="system">System</button>
+          <button class="tab" type="button" role="radio" data-theme-choice="dark">Dark</button>
+          <button class="tab" type="button" role="radio" data-theme-choice="light">Light</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Pricing defaults</h2></div>
+    <div class="st-body">
+      <div class="st-row">
+        <div class="st-label">Interest rate<span class="st-hint">Annual, in %. Used to price options and solve IV.</span></div>
+        <div class="field"><input id="rate" type="number" step="0.05" class="w70" aria-label="Interest rate %"></div>
+      </div>
+      <div class="st-row">
+        <div class="st-label">Dividend yield<span class="st-hint">Annual, in %.</span></div>
+        <div class="field"><input id="divYield" type="number" step="0.05" class="w70" aria-label="Dividend yield %"></div>
+      </div>
+      <p class="st-note" id="rate-error" role="alert" hidden></p>
+      <p class="st-note">These are the starting values on Chain &amp; screener, Portfolio and a new Options Analyser set-up. Each page can still change them for the moment, and a saved analysis keeps its own. The journal prices trades with its own rate, set on the server (<code>TRADELOG_RATE</code>, default 4%).</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Interactive Brokers</h2></div>
+    <div class="st-body">
+      <div class="st-row">
+        <div class="st-label">TWS connection<span class="st-hint">Read-only. It only connects when you press Connect.</span></div>
+        <div class="st-tws">
+          <span class="st-dot" id="tws-dot" aria-hidden="true"></span>
+          <span class="st-value" id="tws-message" role="status" aria-live="polite">Checking…</span>
+          <button class="btn primary sm" id="tws-connect" type="button" disabled>Connect</button>
+          <button class="btn sm" id="tws-disconnect" type="button" disabled>Disconnect</button>
+        </div>
+      </div>
+      <p class="st-note">This is the one TWS connection for the whole app: the analyser's market data and the journal's fills share it, and the TWS chip at the bottom of the sidebar shows the same state. Read-only: nothing places orders. It never connects on its own; each press of Connect makes one attempt, and nothing polls in the background.</p>
+      <p class="st-note">TWS only returns executions from the current session, or up to 7 days if you raise <i>Trade Log &rarr; show trades for</i> in TWS settings. Older history is not available this way, so sync every few days.</p>
+      <p class="st-note">Import fills from the Trades page: <a href="/journal/?import=1">Import from IBKR</a>.</p>
+    </div>
+  </section>
+
+  <section class="card" id="accounts-card">
+    <div class="card-h"><h2>Accounts</h2><span class="grow"></span>
+      <button class="btn sm" type="button" data-accounts-open-add>Add account</button></div>
+    <div class="st-body">
+      <div class="acc-add" data-accounts-add hidden></div>
+      <div class="acc-list" data-accounts-list><p class="st-note">Loading…</p></div>
+      <p class="st-note" role="alert" data-accounts-error hidden></p>
+      <p class="st-note">Every journal trade belongs to one account. <b>IBKR</b> accounts get their positions from TWS, and imported fills are filed under the IBKR account whose broker ref is the fill's account number (else the first IBKR account). In a <b>Paper</b> account the journal trades are the positions. <b>Other</b> accounts use a CSV of positions or the journal. Rename an account or change its broker ref in place; deleting an account with trades moves them to the account you pick. Move trades between accounts on the <a href="/journal/">Trades</a> page.</p>
+    </div>
+  </section>
+
+  <p class="legend-note">Settings are saved in this browser; accounts are saved in the journal.</p>
+</main>
+</body>
+</html>

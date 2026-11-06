@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trade · Journal · OptionDash</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<link rel="stylesheet" href="/journal/static/css/app.css">
+<script src="/shared/nav.js"></script>
+<script src="/shared/accounts.js"></script>
+<script src="/journal/static/js/accountpick.js"></script>
+<script src="/shared/vendor/plotly.min.js"></script>
+<script src="/journal/static/js/format.js"></script>
+<script src="/journal/static/js/ui.js"></script>
+<script src="/journal/static/js/api.js"></script>
+<script src="/journal/static/js/charts.js"></script>
+<script src="/journal/static/js/fills.js"></script>
+<script src="/journal/static/js/legrows.js"></script>
+<script src="/journal/static/js/journal.js"></script>
+<script src="/journal/static/js/engine.js"></script>
+<script src="/journal/static/js/tradecharts.js"></script>
+<script src="/journal/static/js/tradepricing.js"></script>
+<script src="/journal/static/js/tradeactions.js"></script>
+<script src="/journal/static/js/shots.js"></script>
+<script src="/journal/static/js/detail.js" defer></script>
+</head>
+<body>
+<main>
+  <section class="card">
+    <div class="card-h" id="title-bar"></div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <div class="tabs" role="tablist">
+        <button class="tab on" data-tab="pnl" type="button">P&amp;L</button>
+        <button class="tab" data-tab="heat" type="button">Heatmap</button>
+        <button class="tab" data-tab="gprice" type="button">Greeks × Price</button>
+        <button class="tab" data-tab="gtime" type="button">Greeks × Time</button>
+        <button class="tab" data-tab="timeline" type="button">P&amp;L timeline</button>
+      </div>
+      <span class="grow"></span>
+      <span class="note">Priced by the OptionDash engine (American, BAW)</span>
+    </div>
+    <div class="card-b row" id="engine-controls" style="gap:8px;align-items:center"></div>
+    <div class="stats greeks-strip" id="greeks"></div>
+    <div class="chart" id="chart"></div>
+    <div class="card-b note" id="chart-note"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <h2>Legs &amp; fills</h2>
+      <span class="grow"></span>
+      <button class="btn sm" id="act-adjust" type="button">Adjust / Roll / Close</button>
+      <button class="btn sm" id="act-expire" type="button">Expire worthless</button>
+      <button class="btn sm" id="act-mark" type="button">Add mark</button>
+    </div>
+    <div class="table-wrap"><table class="t" id="legs"></table></div>
+    <div class="card-b" id="marks"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <h2>Journal</h2>
+      <span class="dirty hidden" id="dirty">Unsaved changes</span>
+      <span class="grow"></span>
+      <button class="btn primary sm" id="save-journal" type="button">Save journal</button>
+    </div>
+    <div class="card-b" id="journal"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Screenshots</h2><span class="note">Drop, paste (Ctrl+V) or choose an image. PNG, JPEG, GIF or WebP, up to 10 MB.</span></div>
+    <div class="card-b" id="shots"></div>
+  </section>
+
+  <div class="row">
+    <span class="note" id="meta-line"></span>
+    <span class="grow"></span>
+    <button class="btn danger" id="delete" type="button">Delete trade</button>
+  </div>
+</main>
+</body>
+</html>

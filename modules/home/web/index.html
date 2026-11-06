@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home · OptionDash</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<link rel="stylesheet" href="/home/static/home.css">
+<script src="/shared/nav.js"></script>
+<script src="/shared/vendor/plotly.min.js"></script>
+<script src="/shared/accounts.js"></script>
+<script src="/shared/widgets.js"></script>
+<script src="/shared/vendor/sortable.min.js"></script>
+<script src="/home/static/page.js" defer></script>
+</head>
+<body>
+<main class="home">
+  <div class="home-head">
+    <h1>Home</h1>
+    <span class="grow"></span>
+    <span class="home-acc-note" id="acc-note" aria-live="polite" hidden></span>
+    <span class="home-acc" id="acc-picker"></span>
+    <span class="tws-pill" id="tws-pill" aria-live="polite"></span>
+    <span class="status" id="asof"></span>
+    <span id="layout-tools" class="home-tools" hidden>
+      <select id="add-card" class="home-add" aria-label="Add a hidden card back"></select>
+      <button class="btn" id="reset-layout" type="button" title="Back to the default cards, order and sizes">Reset</button>
+      <button class="btn primary" id="done-layout" type="button">Done</button>
+    </span>
+    <button class="btn" id="edit-layout" type="button" title="Move, resize, hide or add cards">Edit layout</button>
+    <button class="btn" id="refresh" type="button">Refresh</button>
+  </div>
+  <div id="grid" class="home-grid"></div>
+  <p class="legend-note">Edit layout to drag cards by their ⠿ handle (or move them with ◀ ▶), change their width, hide them or add them back; Done locks the layout. It is saved in this browser. Cards read on load and on Refresh; nothing polls. The journal cards follow the Accounts filter, shared with Portfolio and Trades.</p>
+</main>
+</body>
+</html>

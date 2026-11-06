@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Options Analyser · OptionDash</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<script src="/shared/vendor/plotly.min.js"></script>
+<script src="/shared/nav.js"></script>
+<script src="/analyser/controls.js"></script>
+<script src="/analyser/legrules.js"></script>
+<script src="/analyser/syncplan.js"></script>
+<script src="/analyser/forwardiv.js"></script>
+<script src="/analyser/presets.js"></script>
+<style>
+  /* Shared tokens and components live in /shared/theme.css. */
+
+  /* ---------- top bar ---------- */
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+    padding: 10px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
+    position: sticky; top: 0; z-index: 5;
+  }
+  #symbol { width: 90px; text-transform: uppercase; font-weight: 600; }
+  #spot { width: 110px; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 14px 18px 40px; max-width: 1500px; margin: 0 auto; }
+
+  /* ---------- legs ---------- */
+  .legs-wrap { overflow-x: auto; }
+  table.legs { width: 100%; border-collapse: collapse; min-width: 1070px; }
+  table.legs th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); font-weight: 600; text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  table.legs td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.legs tr.off td:not(:first-child) { opacity: .38; }
+  td input, td select { background: var(--bg); border: 1px solid var(--line-2); border-radius: 5px; padding: 4px 6px; height: 28px; width: 100%; }
+  td .sub { font-size: 10.5px; color: var(--faint); margin-top: 2px; font-family: var(--mono); white-space: nowrap; }
+  .theo { color: var(--muted); }
+
+  /* ---------- chart area ---------- */
+  /* Summary stats: one slim wrapping row of key/value pairs under the chart tabs. */
+  .chart-stats { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 26px; padding: 7px 14px; border-bottom: 1px solid var(--line); }
+  .chart-stats:empty { display: none; }
+  /* Spacing, not dividers, between items: a divider would dangle at the end of a wrapped line. */
+  .chart-stats .cs { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; }
+  .chart-stats .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); white-space: nowrap; }
+  .chart-stats .v { font: 600 13.5px/1.3 var(--mono); white-space: nowrap; }
+  .chart-stats .s { font: 10.5px var(--mono); color: var(--faint); white-space: nowrap; }
+  #chart { height: 470px; }
+  .controls { display: grid; grid-template-columns: 2.2fr 1fr 1fr; gap: 18px; padding: 12px 14px 14px; border-top: 1px solid var(--line); }
+  .ctl .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 8px; }
+  .ctl .top span:first-child { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .ctl .top b { font: 600 12.5px var(--mono); color: var(--text); text-align: right; }
+  .when-local { color: var(--faint); font-weight: 400; text-transform: none; letter-spacing: 0; display: inline-block; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=range]:focus { outline: none; }
+  .ticks { display: flex; justify-content: space-between; font: 10.5px var(--mono); color: var(--faint); margin-top: 2px; }
+  .slide-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .slide-row input[type=range] { flex: 1; min-width: 60px; }
+  .rowk { width: 30px; flex: none; font-size: 10.5px; color: var(--muted); }
+  .nudge { flex: none; width: 24px; height: 24px; padding: 0; font-size: 10px; line-height: 1; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 5px; color: var(--muted); cursor: pointer; }
+  .nudge:hover { color: var(--text); border-color: var(--muted); }
+  .ctl input[type=date], .ctl input[type=time], .valbox input { flex: none; height: 24px; padding: 0 5px; background: var(--bg); border: 1px solid var(--line-2); border-radius: 5px; font-family: var(--mono); font-size: 11.5px; }
+  .ctl input[type=date], .ctl input[type=time] { width: 124px; }
+  .ctl input:focus { outline: none; border-color: var(--accent); }
+  .valbox { display: inline-flex; align-items: center; gap: 5px; font: 11px var(--mono); color: var(--faint); }
+  .valbox input { width: 62px; text-align: right; }
+  .dt-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .ctl.off { opacity: .45; pointer-events: none; }
+
+  /* ---------- greeks strip ---------- */
+  .greeks { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); }
+  .greeks.two { border-top: 1px solid var(--line); }
+  .g { padding: 10px 14px; border-right: 1px solid var(--line); }
+  .g:last-child { border-right: 0; }
+  .g .k { font-size: 10.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; display: flex; gap: 6px; align-items: baseline; }
+  .g .k em { font-style: normal; text-transform: none; color: var(--faint); letter-spacing: 0; }
+  .g .v { font: 600 16px/1.3 var(--mono); margin-top: 3px; }
+  .g .s { font: 11px var(--mono); color: var(--faint); }
+  .foot { font-size: 11.5px; color: var(--faint); padding: 0 2px; }
+  .foot code { font-family: var(--mono); color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .controls { grid-template-columns: 1fr; }
+    .greeks { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    #chart { height: 380px; }
+    header { padding: 10px 14px; }
+    main { padding: 12px 14px 40px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><i></i>Options Analyser</div>
+  <div class="field"><label for="symbol">Symbol</label><input id="symbol" value="SPX"></div>
+  <div class="field"><label for="spot">Underlying</label><input id="spot" type="number" step="any" value="5800"></div>
+  <div class="field"><label for="model">Model</label>
+    <select id="model">
+      <option value="european">European · Black-Scholes</option>
+      <option value="futures">Futures options · Black-76</option>
+      <option value="american">American · Barone-Adesi-Whaley</option>
+    </select>
+  </div>
+  <div class="field"><label for="rate">Rate %</label><input id="rate" class="w70" type="number" step="0.05" value="4.0"></div>
+  <div class="field"><label for="divy">Div yld %</label><input id="divy" class="w70" type="number" step="0.05" value="1.3"></div>
+  <div class="field"><label for="pdte">Days</label><input id="pdte" class="w70" type="number" min="0" step="any" value="30" title="DTE used when loading a preset; strikes scale with √time"></div>
+  <div class="field"><label for="preset">Strategy</label>
+    <select id="preset">
+      <option value="">— load a preset —</option>
+    </select>
+  </div>
+  <div class="grow"></div>
+  <div class="status" id="status">ready</div>
+</header>
+
+<main>
+  <!-- LEGS -->
+  <section class="card">
+    <div class="card-h">
+      <h2>Legs</h2>
+      <span class="legend-note">Premium is the price now (blank = theoretical). My fill, when set, is your cost basis for P&amp;L. DTE takes decimals — 0.25 = 6 hours.</span>
+      <div class="grow"></div>
+      <button class="btn" data-add="call">+ Call</button>
+      <button class="btn" data-add="put">+ Put</button>
+      <button class="btn" data-add="stock">+ Stock / Future</button>
+    </div>
+    <div class="legs-wrap">
+      <table class="legs">
+        <thead><tr>
+          <th style="width:34px"></th><th style="width:74px">Side</th><th style="width:70px">Qty</th><th style="width:92px">Type</th>
+          <th style="width:110px">Strike</th><th style="width:110px">DTE</th><th style="width:90px">IV %</th>
+          <th style="width:150px">Premium</th><th style="width:90px" title="The price you paid or received per share. P&amp;L is measured from it.">My fill</th><th style="width:80px">Mult</th><th>Theo · Δ</th><th style="width:40px"></th>
+        </tr></thead>
+        <tbody id="legs"></tbody>
+      </table>
+    </div>
+    <div id="fwdiv" hidden style="padding:8px 14px;border-top:1px solid var(--line);font:12px/1.6 var(--mono);color:var(--text);white-space:pre-line"></div>
+  </section>
+
+  <!-- CHART, with the summary stats read alongside it. Panels added by
+       scripts (position, earnings, ...) mount after this card. -->
+  <section class="card" id="chartcard">
+    <div class="card-h">
+      <div class="tabs" role="tablist">
+        <button class="tab on" data-view="payoff">P&amp;L</button>
+        <button class="tab" data-view="tv" title="TradingView price chart of the loaded symbol (delayed, needs internet)">Chart</button>
+        <button class="tab" data-view="heat">Heatmap</button>
+        <button class="tab" data-view="gprice">Greeks × Price</button>
+        <button class="tab" data-view="gtime">Greeks × Time</button>
+      </div>
+      <div class="grow"></div>
+      <span class="legend-note" id="viewnote"></span>
+    </div>
+    <div class="chart-stats" id="stats" role="group" aria-label="Position summary"></div>
+    <div id="chart"></div>
+    <div class="controls">
+      <div class="ctl" id="datectl">
+        <div class="top"><span>Date &amp; time</span><b id="tlabel">—</b></div>
+        <div class="slide-row">
+          <span class="rowk">Day</span>
+          <button class="nudge" id="daydown" title="Previous day" aria-label="Previous day">◀</button>
+          <input id="dayslider" type="range" min="0" max="0" value="0" aria-label="Day">
+          <button class="nudge" id="dayup" title="Next day" aria-label="Next day">▶</button>
+          <input id="dayinput" type="date" aria-label="Date in New York">
+        </div>
+        <div class="slide-row">
+          <span class="rowk">Time</span>
+          <button class="nudge" id="timedown" title="15 minutes earlier" aria-label="15 minutes earlier">◀</button>
+          <input id="timeslider" type="range" min="0" max="1425" step="15" value="0" aria-label="Time of day, New York">
+          <button class="nudge" id="timeup" title="15 minutes later" aria-label="15 minutes later">▶</button>
+          <input id="timeinput" type="time" step="60" aria-label="Time in New York">
+        </div>
+        <div class="dt-head">
+          <div class="ticks"><span id="tmax"></span></div>
+          <span class="chips">
+            <button class="chip" data-jump="now">Now</button>
+            <button class="chip" data-jump="open" title="09:30 ET on the selected day">Open</button>
+            <button class="chip" data-jump="close" title="16:00 ET on the selected day">Close</button>
+            <button class="chip" data-jump="expiry" title="Next leg expiry; click again to cycle">Expiry</button>
+          </span>
+        </div>
+      </div>
+      <div class="ctl">
+        <div class="top"><span>IV shift</span>
+          <span class="valbox"><input id="ivbox" type="number" min="-20" max="20" step="0.1" aria-label="IV shift in points">pts<button class="reset" id="ivreset">Reset</button></span></div>
+        <div class="slide-row">
+          <button class="nudge" id="ivdown" title="−0.1 pts" aria-label="Lower IV shift">◀</button>
+          <input id="ivshift" type="range" min="-20" max="20" step="0.1" value="0" aria-label="IV shift">
+          <button class="nudge" id="ivup" title="+0.1 pts" aria-label="Raise IV shift">▶</button>
+        </div>
+        <div class="ticks"><span>−20</span><span>+20</span></div>
+      </div>
+      <div class="ctl">
+        <div class="top"><span>Price range</span>
+          <span class="valbox">±<input id="rangebox" type="number" min="0.5" max="60" step="0.5" aria-label="Price range in percent">%<button class="reset" id="rangereset">Auto</button></span></div>
+        <div class="slide-row">
+          <button class="nudge" id="rangedown" title="−0.5%" aria-label="Narrow range">◀</button>
+          <input id="range" type="range" min="0.5" max="60" step="0.5" value="15" aria-label="Price range">
+          <button class="nudge" id="rangeup" title="+0.5%" aria-label="Widen range">▶</button>
+        </div>
+        <div class="ticks"><span>±0.5%</span><span id="rangelabel"></span><span>±60%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GREEKS -->
+  <section class="card">
+    <div class="card-h"><h2>Position Greeks</h2><span class="legend-note" id="greeknote"></span></div>
+    <div class="greeks" id="greeks1"></div>
+    <div class="greeks two" id="greeks2"></div>
+  </section>
+
+  <div class="foot">Pricing &amp; Greeks: OptionStratLib (Black-Scholes, Black-76); American uses an f64 port of its Barone-Adesi-Whaley, Greeks by finite differences.
+    Units: Δ in underlying units, Γ per 1.00 move, Θ in $/calendar day, Vega in $ per vol point, ρ in $ per 1% rate. Probability of profit uses a lognormal at the legs' mean IV.</div>
+</main>
+
+<script>
+(() => {
+  // ------------------------------------------------------------------ state
+  const $ = (id) => document.getElementById(id);
+  const K = window.ODControls;
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const C = { pos: css('--pos'), neg: css('--neg'), accent: css('--accent'), blue: css('--blue'),
+              text: css('--text'), muted: css('--muted'), faint: css('--faint'), line: css('--line'), bg: css('--panel'),
+              line2: css('--line-2'), zero: css('--chart-zero'), hover: css('--chart-hover'),
+              heat: [css('--heat-1'), css('--heat-2'), css('--heat-3'), css('--heat-4'), css('--heat-5')] };
+
+  let uid = 1;
+  // A new set-up starts from the pricing defaults in Settings; a saved one keeps its own.
+  const PREF = window.ODPrefs ? window.ODPrefs.get() : { rate: 4, divYield: 1.3 };
+  const S = load() || {
+    symbol: 'SPX', spot: 5800, model: 'european', rate: PREF.rate, divy: PREF.divYield,
+    legs: [], ivShift: 0, range: 15, view: 'payoff', tSel: null, pdte: 30,
+  };
+  S.legs.forEach(l => l.id = uid++);
+  S.tPin = null;         // pins are indexes into the last reply's expiries, so never restored
+  let R = null;          // last response
+  let tIndex = 0;
+
+  function save() { try { localStorage.setItem('optiondash', JSON.stringify(S)); } catch (e) {} }
+  function load() { try { return JSON.parse(localStorage.getItem('optiondash')); } catch (e) { return null; } }
+
+  // ------------------------------------------------------------------ helpers
+  const fmt = (x, d = 2) => x == null || !isFinite(x) ? '—' : x.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const money = (x, d = 0) => x == null || !isFinite(x) ? '—' : (x < 0 ? '−$' : '$') + fmt(Math.abs(x), d);
+  const sgn = (x, d = 2) => x == null || !isFinite(x) ? '—' : (x >= 0 ? '+' : '−') + fmt(Math.abs(x), d);
+  const cls = (x) => x > 1e-9 ? 'pos' : x < -1e-9 ? 'neg' : '';
+  function strikeStep(s) {
+    const steps = [0.5, 1, 2.5, 5, 10, 25, 50, 100, 250, 500];
+    return steps.find(x => x >= s * 0.0008) || 1000;
+  }
+  const roundK = (k) => { const st = strikeStep(S.spot); return Math.max(st, Math.round(k / st) * st); };
+  function dateAt(days) { return new Date(Date.now() + days * 86400000); }
+  // New York time leads, as exchanges list expiries; the viewer's own clock is only a lighter extra
+  const when = (days) => K.whenParts(days, Date.now());
+  function tLabel(days, short = false) {
+    const w = when(days);
+    if (short) return w.short;
+    return w.local ? `${w.main} · ${w.local}` : w.main;
+  }
+  /** The long label, with the viewer's time in a lighter span. Text nodes only. */
+  function showWhen(node, days, prefix = '') {
+    const w = when(days);
+    const local = document.createElement('span');
+    local.className = 'when-local';
+    local.textContent = w.local ? ` · ${w.local}` : '';
+    node.replaceChildren(prefix + w.main, local);
+  }
+  function dteSub(dte) {
+    if (dte < 1) return `${(dte * 24).toFixed(1)}h left`;
+    // New York's calendar day, as exchanges and IBKR list expiries, not the day where you are
+    return dateAt(dte).toLocaleDateString('en-AU', { timeZone: 'America/New_York', weekday: 'short', day: 'numeric', month: 'short', year: '2-digit' });
+  }
+
+  // ------------------------------------------------------------------ presets
+  // Preset strikes are written for 30 DTE and scale with √(DTE/30), so a 0DTE condor isn't 7σ wide
+  function leg(kind, long, kOff, opts = {}) {
+    const base = Math.max(+S.pdte || 30, 1 / 96);
+    const dte = +((opts.dte ?? 30) * base / 30).toFixed(4);
+    kOff *= Math.sqrt(base / 30);
+    return { id: uid++, enabled: true, kind, long, qty: opts.qty ?? 1,
+      strike: kind === 'stock' ? 0 : roundK(S.spot * (1 + kOff)), dte: kind === 'stock' ? 0 : dte,
+      iv: opts.iv ?? 18, premium: null, multiplier: K.defaultMultiplier(kind, S.model) };
+  }
+  const PRESETS = Object.fromEntries(ODPresets.ALL.map((p) => [p.name, () => ODPresets.build(p.name, leg)]));
+  // The dropdown is built from the same list, so it always matches the presets.
+  for (const g of ODPresets.GROUPS) {
+    const og = document.createElement('optgroup');
+    og.label = g.label;
+    for (const p of g.presets) og.append(new Option(p.name, p.name));
+    $('preset').append(og);
+  }
+
+  // ------------------------------------------------------------------ legs table
+  function renderLegs() {
+    const tb = $('legs');
+    tb.innerHTML = '';
+    if (!S.legs.length) {
+      tb.innerHTML = `<tr><td colspan="12" style="padding:22px;text-align:center;color:var(--faint)">No legs yet — pick a strategy above or add a call / put.</td></tr>`;
+    }
+    S.legs.forEach((l, i) => {
+      const info = R && R.legs[i];
+      const isStock = l.kind === 'stock';
+      const tr = document.createElement('tr');
+      if (!l.enabled) tr.className = 'off';
+      tr.innerHTML = `
+        <td><input type="checkbox" class="check" data-f="enabled" ${l.enabled ? 'checked' : ''} title="Include leg"></td>
+        <td><button class="side ${l.long ? 'long' : 'short'}" data-f="side">${l.long ? 'BUY' : 'SELL'}</button></td>
+        <td><input type="number" min="0" step="1" data-f="qty" value="${l.qty}"></td>
+        <td><select data-f="kind">
+              <option value="call" ${l.kind === 'call' ? 'selected' : ''}>Call</option>
+              <option value="put" ${l.kind === 'put' ? 'selected' : ''}>Put</option>
+              <option value="stock" ${isStock ? 'selected' : ''}>${S.model === 'futures' ? 'Future' : 'Stock'}</option></select></td>
+        <td>${isStock ? '<span class="sub">—</span>' : `<input type="number" step="any" data-f="strike" value="${l.strike}">`}</td>
+        <td>${isStock ? '<span class="sub">—</span>' : `<input type="number" min="0" step="any" data-f="dte" value="${K.dteText(l.dte)}"><div class="sub">${dteSub(l.dte)}</div>`}</td>
+        <td>${isStock ? '<span class="sub">—</span>' : `<input type="number" min="0" step="0.1" data-f="iv" value="${l.iv}">`}</td>
+        <td><div style="display:flex;gap:4px">
+              <input type="number" step="any" data-f="premium" value="${l.premium ?? ''}" placeholder="${info ? fmt(isStock ? S.spot : info.theo, 2) : 'theo'}">
+              ${isStock ? '' : `<button class="iconbtn" data-f="solve" title="Solve IV from this premium">IV←</button>`}
+            </div></td>
+        <td><input type="number" min="0" step="any" data-f="fill" value="${Number.isFinite(l.fill) ? l.fill : ''}" placeholder="—" title="My fill: price paid or received per share"></td>
+        <td><input type="number" min="0" step="any" data-f="multiplier" value="${l.multiplier}"></td>
+        <td class="num">${info ? `<span class="theo">${fmt(info.theo, 2)}</span> · <span class="${cls(info.greeks.delta)}">${sgn(info.greeks.delta, 1)}Δ</span>
+              <div class="sub">${info.cash >= 0 ? 'credit ' : 'debit '}${money(Math.abs(info.cash))}</div>` : '<span class="sub">—</span>'}</td>
+        <td><button class="iconbtn del" data-f="del" title="Remove leg">✕</button></td>`;
+      tr.querySelectorAll('[data-f]').forEach(el => {
+        const f = el.dataset.f;
+        if (f === 'side') el.onclick = () => { l.long = !l.long; changed(true); };
+        else if (f === 'del') el.onclick = () => { S.legs.splice(i, 1); changed(true); };
+        else if (f === 'solve') el.onclick = () => solveIv(l);
+        else if (f === 'enabled') el.onchange = () => { l.enabled = el.checked; changed(true); };
+        else if (f === 'kind') el.onchange = () => {
+          l.multiplier = K.multiplierOnKindChange(l.kind, el.value, l.multiplier, S.model);
+          l.kind = el.value;
+          if (l.kind === 'stock') l.qty = S.model === 'futures' ? 1 : 100;
+          else { if (!l.strike) l.strike = roundK(S.spot); if (!l.dte) l.dte = 30; }
+          l.premium = null; l.fill = null; Object.assign(l, ODRules.onEdit(l, 'kind')); changed(true);
+        };
+        else el.oninput = () => {
+          const v = el.value.trim();
+          if (f === 'premium') l.premium = v === '' ? null : +v;
+          else if (f === 'fill') l.fill = v !== '' && isFinite(+v) && +v >= 0 ? +v : null;
+          else if (v !== '' && isFinite(+v)) { l[f] = +v; Object.assign(l, ODRules.onEdit(l, f)); }
+          changed(false);
+          if (f === 'dte') { const sub = el.parentElement.querySelector('.sub'); if (sub) sub.textContent = dteSub(l.dte); OptionDash.afterLegs(); }
+        };
+      });
+      tb.appendChild(tr);
+    });
+    OptionDash.afterLegs();
+  }
+
+  async function solveIv(l) {
+    if (l.premium == null) { setStatus('Enter a premium first, then solve IV from it', true); return; }
+    try {
+      const r = await fetch('/api/iv', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ kind: l.kind, strike: l.strike, dte: l.dte, premium: l.premium, spot: S.spot,
+          rate: S.rate / 100, div_yield: S.divy / 100, model: S.model }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      l.iv = +(j.iv * 100).toFixed(2); Object.assign(l, ODRules.onEdit(l, 'iv'));
+      changed(true);
+      setStatus(`IV solved: ${l.iv.toFixed(2)}%`);
+    } catch (e) { setStatus(e.message, true); }
+  }
+
+  // ------------------------------------------------------------------ server
+  let timer = null, ctrl = null;
+  function changed(rerenderLegs, delay = 140) {
+    save();
+    if (rerenderLegs) renderLegs();
+    clearTimeout(timer); timer = setTimeout(run, delay);
+    try { ODForward.render($('fwdiv'), S.legs, S.ivShift); } catch (e) { console.error('forward IV failed', e); }  // display only: last, so it can never stop the legs or pricing
+  }
+  let heldUntil = 0;     // holdMs keeps a message up through the pricing updates after it; errors always show
+  function setStatus(msg, err = false, holdMs = 0) {
+    if (!err && !holdMs && Date.now() < heldUntil) return;
+    if (holdMs) heldUntil = Date.now() + holdMs;
+    const s = $('status'); s.textContent = msg; s.className = 'status' + (err ? ' err' : '');
+  }
+  function legsChanged() { S.legs.forEach(l => { if (l.id == null) l.id = uid++; }); changed(true); }  // legs were replaced or added
+
+  // One request shape for every pricing call, so a scenario prices on the same axis as the chart.
+  // A leg's cost basis is my fill when set (position.js), else its premium as before.
+  const basis = (l) => Number.isFinite(l.fill) && l.fill >= 0 ? l.fill : l.premium;
+  const pricingBody = (legs, atDays, nDates = 40) => ({
+    spot: S.spot, rate: S.rate / 100, div_yield: S.divy / 100, model: S.model,
+    iv_shift: S.ivShift / 100, range: effRange() / 100, n_prices: 121, n_dates: nDates, at_days: atDays,
+    legs: legs.map(l => ({ kind: l.kind, long: l.long, qty: l.qty, strike: l.strike, dte: l.dte,
+      iv: l.iv / 100, premium: basis(l), multiplier: l.multiplier, enabled: l.enabled })),
+  });
+
+  async function run() {
+    if (ctrl) ctrl.abort();
+    ctrl = new AbortController();
+    const at = selDays();
+    const body = pricingBody(S.legs, [at]);
+    const t0 = performance.now();
+    setStatus('pricing…');
+    try {
+      const r = await fetch('/api/analyze', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body), signal: ctrl.signal });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.statusText);
+      R = j;
+      const n = R.times.length;
+      tIndex = nearest(R.times, at);
+      Object.assign(S, K.normaliseSelection(S, R.expiries, lastDays(), Date.now()));
+      save();
+      setStatus(`${S.legs.filter(l => l.enabled).length} legs · ${R.prices.length}×${n} grid · ${Math.round(performance.now() - t0)} ms`);
+      renderLegsInfo();
+      renderAll();
+      try { OptionDash.afterRun(); } catch (e) { console.error('scenario failed', e); }  // add-ons must never stop pricing
+    } catch (e) {
+      if (e.name !== 'AbortError') setStatus(e.message.includes('fetch') ? 'server not reachable — is cargo run still going?' : e.message, true);
+    }
+  }
+  const nearest = (arr, x) => arr.reduce((bi, v, i) => Math.abs(v - x) < Math.abs(arr[bi] - x) ? i : bi, 0);
+
+  // Only patch the theo/Δ cells so typing focus isn't lost
+  function renderLegsInfo() {
+    if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#legs')) {
+      const rows = $('legs').querySelectorAll('tr');
+      S.legs.forEach((l, i) => {
+        const info = R.legs[i], tr = rows[i];
+        if (!tr || !info) return;
+        const cell = tr.children[10];
+        cell.innerHTML = `<span class="theo">${fmt(info.theo, 2)}</span> · <span class="${cls(info.greeks.delta)}">${sgn(info.greeks.delta, 1)}Δ</span>
+              <div class="sub">${info.cash >= 0 ? 'credit ' : 'debit '}${money(Math.abs(info.cash))}</div>`;
+        const p = tr.querySelector('[data-f=premium]');
+        if (p) p.placeholder = fmt(l.kind === 'stock' ? S.spot : info.theo, 2);
+      });
+      OptionDash.afterLegs();
+    } else renderLegs();
+  }
+
+  // ------------------------------------------------------------------ stats + greeks
+  function renderStats() {
+    const s = R.summary;
+    const be = s.breakevens.length ? s.breakevens.slice(0, 3).map(b => fmt(b, b > 1000 ? 0 : 2)).join(' · ') + (s.breakevens.length > 3 ? ' …' : '') : 'none';
+    const curPnl = R.grid.pnl[tIndex][R.spot_index];
+    const cells = [
+      ['Net ' + (s.net_cash >= 0 ? 'credit' : 'debit'), money(Math.abs(s.net_cash)), s.net_cash >= 0 ? 'pos' : 'neg', 'cash at entry'],
+      ['Max profit', s.max_profit == null ? 'Unlimited' : money(s.max_profit), 'pos', 'at first expiry'],
+      ['Max loss', s.max_loss == null ? 'Unlimited' : money(s.max_loss), 'neg', 'at first expiry'],
+      ['Breakevens', be, '', 'at first expiry'],
+      ['Prob. of profit', s.pop == null ? '—' : fmt(s.pop * 100, 1) + '%', '', s.expected_move ? `1σ move ±${fmt(s.expected_move, s.expected_move > 100 ? 0 : 2)}` : ''],
+      ['P&L at spot', money(curPnl), cls(curPnl), tLabel(R.times[tIndex], true)],
+    ];
+    $('stats').innerHTML = cells.map(([k, v, c, sub]) =>
+      `<div class="cs"><span class="k">${k}</span><span class="v num ${c}" title="${v}">${v}</span>${sub ? `<span class="s">${sub}</span>` : ''}</div>`).join('');
+  }
+
+  function renderGreeks() {
+    const i = tIndex, j = R.spot_index, g = R.grid;
+    const at = (m) => m[i][j];
+    const now = R.summary.now;
+    const row = [
+      ['Delta', 'Δ', at(g.delta), now.delta, 1, 'units'],
+      ['Gamma', 'Γ', at(g.gamma), now.gamma, 3, 'Δ per 1.00'],
+      ['Theta', 'Θ', at(g.theta), now.theta, 2, '$ / day'],
+      ['Vega', 'ν', at(g.vega), now.vega, 2, '$ / vol pt'],
+      ['Rho', 'ρ', at(g.rho), now.rho, 2, '$ / 1% rate'],
+    ];
+    showWhen($('greeknote'), R.times[i], `at spot ${fmt(S.spot, 2)} · `);
+    $('greeks1').innerHTML = row.map(([k, sym, v, n, d, unit]) =>
+      `<div class="g"><div class="k">${k} <em>${sym} · ${unit}</em></div><div class="v ${cls(v)}">${sgn(v, d)}</div>
+       <div class="s">${i ? 'today ' + sgn(n, d) : '&nbsp;'}</div></div>`).join('');
+    const s2 = R.summary.now2;
+    $('greeks2').style.display = s2 ? '' : 'none';
+    if (s2) {
+      const r2 = [['Vanna', 'dΔ/dσ', s2.vanna], ['Charm', 'dΔ/dt', s2.charm], ['Vomma', 'dν/dσ', s2.vomma], ['Veta', 'dν/dt', s2.veta], ['Colour', 'dΓ/dt', s2.color]];
+      $('greeks2').innerHTML = r2.map(([k, sym, v]) =>
+        `<div class="g"><div class="k">${k} <em>${sym}</em></div><div class="v ${cls(v)}" style="font-size:14px">${sgn(v, Math.abs(v) < 1 ? 4 : 2)}</div><div class="s">today, at spot</div></div>`).join('');
+    }
+  }
+
+  // ------------------------------------------------------------------ charts
+  const baseLayout = (extra = {}) => Object.assign({
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { family: 'Inter, system-ui, sans-serif', size: 11.5, color: C.muted },
+    margin: { l: 64, r: 18, t: 16, b: 44 }, showlegend: false,
+    hoverlabel: { bgcolor: C.hover, bordercolor: C.line2, font: { family: 'JetBrains Mono, ui-monospace, monospace', color: C.text, size: 11.5 } },
+    xaxis: { gridcolor: C.line, zerolinecolor: C.line, linecolor: C.line, tickfont: { family: 'JetBrains Mono, ui-monospace, monospace' } },
+    yaxis: { gridcolor: C.line, zeroline: true, zerolinecolor: C.zero, zerolinewidth: 1, linecolor: C.line, tickfont: { family: 'JetBrains Mono, ui-monospace, monospace' } },
+  }, extra);
+  const cfg = { displayModeBar: false, responsive: true };
+  const spotLine = (yref = 'paper') => ({ type: 'line', x0: S.spot, x1: S.spot, y0: 0, y1: 1, yref, line: { color: C.faint, width: 1, dash: 'dot' } });
+
+  // Closed polygon between the curve and y=0 (explicit, so Plotly can't mis-close the fill)
+  const band = (x, y, color) => ({ x: [...x, ...x.slice().reverse()], y: [...y, ...x.map(() => 0)],
+    type: 'scatter', mode: 'lines', line: { width: 0 }, fill: 'toself', fillcolor: color, hoverinfo: 'skip' });
+  // Breakeven guides: text colour at low opacity, so they stay apart from the spot line yet behind the P&L
+  const breakevenLines = (bes) => bes.map(b => ({ type: 'line', layer: 'below', x0: b, x1: b, y0: 0, y1: 1, yref: 'paper',
+    opacity: 0.25, line: { color: C.text, width: 1, dash: 'dot' } }));
+  function payoff() {
+    const x = R.prices, y = R.grid.pnl[tIndex], ye = R.expiry_curve;
+    const posY = y.map(v => Math.max(v, 0)), negY = y.map(v => Math.min(v, 0));
+    const bes = R.summary.breakevens.filter(b => b >= x[0] && b <= x[x.length - 1]);
+    const isExpiry = Math.abs(R.times[tIndex] - R.summary.first_expiry) < 1e-6;
+    const traces = [
+      band(x, posY, 'rgba(47,191,113,.16)'),
+      band(x, negY, 'rgba(239,77,90,.16)'),
+      { x, y: ye, type: 'scatter', mode: 'lines', name: 'At first expiry', line: { color: C.blue, width: 1.5, dash: isExpiry ? 'solid' : 'dash' },
+        hovertemplate: 'expiry  %{y:$,.0f}<extra></extra>' },
+      { x, y, type: 'scatter', mode: 'lines', name: tLabel(R.times[tIndex], true), line: { color: C.accent, width: 2.4 },
+        hovertemplate: 'price %{x:,.2f}<br>P&L    %{y:$,.0f}<extra></extra>' },
+      { x: bes, y: bes.map(() => 0),
+        type: 'scatter', mode: 'markers', marker: { color: C.text, size: 7, symbol: 'diamond', line: { color: C.bg, width: 1 } }, hovertemplate: 'breakeven %{x:,.2f}<extra></extra>' },
+    ];
+    const extra = OptionDash.payoffExtras();
+    traces.push(...extra.traces);
+    Plotly.react('chart', traces, baseLayout({
+      hovermode: 'x unified',
+      xaxis: Object.assign(baseLayout().xaxis, { title: { text: `${S.symbol || 'Underlying'} price`, standoff: 8 } }),
+      yaxis: Object.assign(baseLayout().yaxis, { title: { text: 'P&L ($)', standoff: 6 }, tickprefix: '$', tickformat: ',.0f' }),
+      shapes: [...extra.shapes, ...breakevenLines(bes), spotLine()],
+      annotations: [{ x: S.spot, y: 1, yref: 'paper', text: 'spot', showarrow: false, yanchor: 'bottom', font: { size: 10.5, color: C.faint } }],
+    }), cfg);
+    $('viewnote').innerHTML = `<span style="color:${C.accent}">━</span> ${tLabel(R.times[tIndex], true)} &nbsp; <span style="color:${C.blue}">┅</span> first expiry${extra.note}`;
+  }
+
+  function heat() {
+    const z = R.prices.map((_, pi) => R.times.map((_, ti) => R.grid.pnl[ti][pi]));
+    const flat = z.flat();
+    const lim = Math.max(...flat.map(Math.abs)) || 1;
+    const xs = R.times.map(t => tLabel(t, true) + (R.times[R.times.length - 1] > 2 ? '' : ''));
+    Plotly.react('chart', [{
+      type: 'heatmap', x: R.times.map(tx), y: R.prices, z, zmid: 0, zmin: -lim, zmax: lim,
+      colorscale: [[0, C.heat[0]], [0.35, C.heat[1]], [0.5, C.heat[2]], [0.65, C.heat[3]], [1, C.heat[4]]],
+      customdata: R.prices.map(() => xs),
+      hovertemplate: '%{customdata}<br>price %{y:,.2f}<br>P&L %{z:$,.0f}<extra></extra>',
+      colorbar: { thickness: 10, outlinewidth: 0, tickprefix: '$', tickformat: ',.0f', tickfont: { family: 'JetBrains Mono, monospace', size: 10.5 } },
+    }], baseLayout({
+      margin: { l: 70, r: 10, t: 16, b: 44 },
+      xaxis: Object.assign(baseLayout().xaxis, { title: { text: hrs() ? 'hours from now' : 'days from now', standoff: 8 }, gridcolor: 'rgba(0,0,0,0)' }),
+      yaxis: Object.assign(baseLayout().yaxis, { title: { text: 'price', standoff: 6 }, zeroline: false, gridcolor: 'rgba(0,0,0,0)' }),
+      shapes: [
+        { type: 'line', xref: 'paper', x0: 0, x1: 1, y0: S.spot, y1: S.spot, line: { color: 'rgba(230,233,239,.5)', width: 1, dash: 'dot' } },
+        { type: 'line', x0: tx(R.times[tIndex]), x1: tx(R.times[tIndex]), y0: 0, y1: 1, yref: 'paper', line: { color: C.accent, width: 1.5 } },
+      ],
+    }), cfg);
+    $('viewnote').textContent = 'P&L by price and date · dotted line = spot · amber = selected date';
+  }
+
+  const GREEKS = [['delta', 'Delta Δ', ',.1f'], ['gamma', 'Gamma Γ', ',.3f'], ['theta', 'Theta Θ ($/day)', '$,.0f'], ['vega', 'Vega ($/vol pt)', '$,.0f']];
+  // yRanges: optional fixed [lo, hi] per greek, so an animation's axes hold still between frames
+  function quad(traceFn, xTitle, shapesFn, yRanges) {
+    const traces = [], ann = [];
+    const layout = baseLayout({ margin: { l: 58, r: 14, t: 26, b: 40 }, hovermode: 'x unified' });
+    GREEKS.forEach(([key, title, f], k) => {
+      const ax = k ? k + 1 : '';
+      const col = k % 2, row = k < 2 ? 1 : 0;
+      const dom = (c, gap) => [c * 0.5 + (c ? gap : 0), c * 0.5 + 0.5 - (c ? 0 : gap)];
+      const fixed = yRanges && yRanges[key] ? { range: yRanges[key], autorange: false } : {};
+      layout['xaxis' + ax] = Object.assign({}, baseLayout().xaxis, { domain: dom(col, 0.045), anchor: 'y' + ax, title: row === 0 ? { text: xTitle, standoff: 4 } : undefined });
+      layout['yaxis' + ax] = Object.assign({}, baseLayout().yaxis, { domain: row ? [0.58, 1] : [0, 0.42], anchor: 'x' + ax, tickprefix: f.startsWith('$') ? '$' : '' }, fixed);
+      ann.push({ text: title, xref: 'x' + ax + ' domain', yref: 'y' + ax + ' domain', x: 0, y: 1.02, xanchor: 'left', yanchor: 'bottom', showarrow: false, font: { size: 11.5, color: C.text } });
+      traceFn(key, f, 'x' + ax, 'y' + ax).forEach(t => traces.push(t));
+      (shapesFn ? shapesFn('x' + ax, 'y' + ax) : []).forEach(s => (layout.shapes = layout.shapes || []).push(s));
+    });
+    layout.annotations = ann;
+    Plotly.react('chart', traces, layout, cfg);
+  }
+
+  function gprice() {
+    const F = OptionDash.greekFrame();  // a frame of the Greeks animation (greekplay.js) replaces the selected date
+    const x = F ? F.x : R.prices, refName = F ? 'from' : 'today';
+    const cur = (key) => F ? F.byPrice[key] : R.grid[key][tIndex];
+    const ref = (key) => F ? (F.ref && F.ref[key]) : (tIndex ? R.grid[key][0] : null);
+    quad((key, f, xa, ya) => [
+      ...(ref(key) ? [{ x, y: ref(key), xaxis: xa, yaxis: ya, type: 'scatter', mode: 'lines', line: { color: C.faint, width: 1.2, dash: 'dot' }, hovertemplate: `${refName} %{y:${f}}<extra></extra>` }] : []),
+      { x, y: cur(key), xaxis: xa, yaxis: ya, type: 'scatter', mode: 'lines', line: { color: C.accent, width: 2 }, hovertemplate: `%{y:${f}}<extra></extra>` },
+    ], 'price', (xa, ya) => [{ type: 'line', xref: xa, yref: ya + ' domain', x0: S.spot, x1: S.spot, y0: 0, y1: 1, line: { color: C.faint, width: 1, dash: 'dot' } }], F && F.priceRanges);
+    const refNote = F ? (F.ref ? ` &nbsp; ┄ from ${tLabel(F.from, true)}` : '') : (tIndex ? ' &nbsp; ┄ today' : '');
+    $('viewnote').innerHTML = `<span style="color:${C.accent}">━</span> ${tLabel(F ? F.t : R.times[tIndex], true)}${refNote}`;
+  }
+
+  const hrs = () => R.times[R.times.length - 1] <= 2;
+  const tx = (t) => hrs() ? t * 24 : t;
+  function gtime() {
+    const j = R.spot_index;
+    const F = OptionDash.greekFrame();  // a frame of the Greeks animation (greekplay.js) moves the playhead
+    const curve = (key) => F ? F.curve[key] : { x: R.times, y: R.grid[key].map(r => r[j]) };
+    const mark = (key) => F ? { t: F.t, y: F.atSpot[key] } : { t: R.times[tIndex], y: R.grid[key][tIndex][j] };
+    // Hover labels once per draw, shared by the four panels; a frame brings its own, made once per curve
+    const labels = F ? F.curveLabels : R.times.map(t => tLabel(t, true));
+    const playShapes = (xa, ya) => F ? [
+      { type: 'rect', layer: 'below', xref: xa, yref: ya + ' domain', x0: tx(F.from), x1: tx(F.to), y0: 0, y1: 1, fillcolor: 'rgba(242,184,75,.07)', line: { width: 0 } },
+      { type: 'line', xref: xa, yref: ya + ' domain', x0: tx(F.t), x1: tx(F.t), y0: 0, y1: 1, line: { color: C.accent, width: 1 } },
+    ] : [];
+    quad((key, f, xa, ya) => [
+      { x: curve(key).x.map(tx), y: curve(key).y, xaxis: xa, yaxis: ya, type: 'scatter', mode: 'lines', line: { color: C.blue, width: 2, shape: 'linear' },
+        customdata: labels, hovertemplate: `%{customdata}  %{y:${f}}<extra></extra>` },
+      { x: [tx(mark(key).t)], y: [mark(key).y], xaxis: xa, yaxis: ya, type: 'scatter', mode: 'markers', marker: { color: C.accent, size: 8 }, hoverinfo: 'skip' },
+    ], hrs() ? 'hours from now' : 'days from now', (xa, ya) => [...R.expiries.map(e => ({ type: 'line', xref: xa, yref: ya + ' domain', x0: tx(e), x1: tx(e), y0: 0, y1: 1, line: { color: C.faint, width: 1, dash: 'dot' } })), ...playShapes(xa, ya)], F && F.timeRanges);
+    $('viewnote').textContent = F ? `${tLabel(F.t, true)} · at spot ${fmt(S.spot, 2)} · shaded = From → To`
+      : `at spot ${fmt(S.spot, 2)} (price held fixed) · dotted = leg expiries`;
+  }
+
+  function renderChart() {
+    if (S.view === 'tv') return;  // the price chart (tvpanel.js) replaces the plot; nothing to price into it
+    if (!R) return;
+    if (!S.legs.some(l => l.enabled)) { Plotly.purge('chart'); $('chart').innerHTML = '<div style="display:grid;place-items:center;height:100%;color:var(--faint)">Add a leg to see the P&L</div>'; return; }
+    ({ payoff, heat, gprice, gtime })[S.view]();
+  }
+
+  const expiryList = () => R ? R.expiries : [];
+  const selDays = () => K.selectionDays(S, expiryList(), Date.now());
+  const lastDays = () => R ? R.times[R.times.length - 1] : 0;
+  const shownMs = () => K.selectionMs(S, expiryList(), Date.now(), lastDays());
+
+  function selectMs(ms) {
+    const now = Date.now();
+    const t = K.clamp(ms, now, now + lastDays() * K.DAY_MS);
+    S.tSel = t - now < 60000 ? null : t;
+    S.tPin = null;
+    showWhen($('tlabel'), (t - now) / K.DAY_MS);
+    changed(false, 30);
+  }
+  function pinNextExpiry() {
+    const e = K.nextExpiry(selDays(), R.expiries);
+    if (e == null) return;
+    S.tSel = null;
+    S.tPin = R.expiries.indexOf(e);
+    showWhen($('tlabel'), e);
+    changed(false, 30);
+  }
+  const shiftDay = (dir) => {
+    const now = Date.now(), sel = K.nyParts(shownMs());
+    const days = K.dayList(now, now + lastDays() * K.DAY_MS);
+    const i = K.clamp(days.indexOf(sel.day) + dir, 0, days.length - 1);
+    selectMs(K.nyToMs(days[i], sel.minutes));
+  };
+  const shiftTime = (dir) => selectMs(K.stepMs(shownMs(), dir));
+  // Leave a control alone while it has focus, so a reply can't fight the drag or the typing
+  const setIdle = (el, v) => { if (document.activeElement !== el) el.value = v; };
+
+  function renderSlider() {
+    const now = Date.now(), end = now + lastDays() * K.DAY_MS, sel = K.nyParts(shownMs());
+    const days = K.dayList(now, end), win = K.dayWindow(sel.day, now, end);
+    $('datectl').classList.toggle('off', lastDays() <= 0);
+    $('dayslider').max = days.length - 1;
+    setIdle($('dayslider'), Math.max(0, days.indexOf(sel.day)));
+    $('timeslider').min = win.min; $('timeslider').max = win.max;
+    setIdle($('timeslider'), sel.minutes);
+    $('dayinput').min = days[0]; $('dayinput').max = days[days.length - 1];
+    setIdle($('dayinput'), sel.day);
+    const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    setIdle($('timeinput'), hhmm(sel.minutes));
+    showWhen($('tlabel'), R.times[tIndex]);
+    $('tmax').textContent = lastDays() > 0 ? 'last expiry ' + tLabel(lastDays(), true) : '';
+  }
+
+  function renderAll() { rangeLabel(); renderSlider(); renderStats(); renderGreeks(); renderChart(); }
+
+  // ------------------------------------------------------------------ wiring
+  // Auto range: wide enough for ~3.5σ of the first expiry and every strike, unless the user drags the slider
+  function autoRange() {
+    const opts = S.legs.filter(l => l.enabled && l.kind !== 'stock');
+    if (!opts.length) return 15;
+    const t = Math.max(Math.min(...opts.map(l => l.dte)), 1 / 24) / 365;
+    const iv = opts.reduce((a, l) => a + Math.max(l.iv + S.ivShift, 0.5), 0) / opts.length / 100;
+    const kSpan = Math.max(...opts.map(l => Math.abs(l.strike / S.spot - 1)));
+    return Math.min(60, Math.max(0.5, 3.5 * iv * Math.sqrt(t) * 100, kSpan * 140));
+  }
+  const effRange = () => S.rangeAuto !== false ? autoRange() : S.range;
+  function rangeLabel() {
+    const r = effRange();
+    $('rangelabel').textContent = S.rangeAuto !== false ? 'auto' : 'fixed';
+    setIdle($('range'), r);
+    setIdle($('rangebox'), +r.toFixed(1));
+  }
+  // A slider with ◀ ▶ buttons and mouse-wheel stepping. apply() takes a raw value.
+  function stepper(slider, down, up, step, read, apply) {
+    down.onclick = () => apply(read() - step);
+    up.onclick = () => apply(read() + step);
+    slider.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      apply(read() + K.wheelDir(e.deltaY) * step);
+    }, { passive: false });
+  }
+  function bindHeader() {
+    const bind = (id, key, num = true, rerender = false) => {
+      const el = $(id); el.value = S[key];
+      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
+        const v = num ? +el.value : el.value;
+        if (num && (el.value === '' || !isFinite(v))) return;
+        S[key] = v; changed(rerender);
+      });
+    };
+    bind('symbol', 'symbol', false); bind('spot', 'spot'); bind('rate', 'rate'); bind('divy', 'divy');
+    bind('model', 'model', false, true);
+    if (S.pdte == null) S.pdte = 30; bind('pdte', 'pdte');
+    $('preset').onchange = (e) => {
+      const p = PRESETS[e.target.value];
+      if (p) { S.legs = p(); S.tSel = null; S.tPin = null; if (window.ODSavedUI) window.ODSavedUI.forget(); changed(true); }
+      e.target.value = '';
+    };
+    document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+      const k = b.dataset.add;
+      S.legs.push(leg(k, true, 0, k === 'stock' ? { qty: S.model === 'futures' ? 1 : 100 } : {}));
+      changed(true);
+    });
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('on', t.dataset.view === S.view);
+      t.onclick = () => showView(t.dataset.view);
+    });
+    bindDate();
+    bindIvShift();
+    bindRange();
+  }
+  function bindDate() {
+    $('dayslider').oninput = (e) => {
+      const now = Date.now(), days = K.dayList(now, now + lastDays() * K.DAY_MS);
+      selectMs(K.nyToMs(days[+e.target.value], K.nyParts(shownMs()).minutes));
+    };
+    $('timeslider').oninput = (e) => selectMs(K.nyToMs(K.nyParts(shownMs()).day, +e.target.value));
+    $('dayinput').oninput = (e) => { if (e.target.value) selectMs(K.nyToMs(e.target.value, K.nyParts(shownMs()).minutes)); };
+    $('timeinput').oninput = (e) => {
+      if (!e.target.value) return;
+      const [h, m] = e.target.value.split(':').map(Number);
+      selectMs(K.nyToMs(K.nyParts(shownMs()).day, h * 60 + m));
+    };
+    ['dayinput', 'timeinput'].forEach(id => $(id).onblur = () => { if (R) renderSlider(); });
+    $('daydown').onclick = () => shiftDay(-1); $('dayup').onclick = () => shiftDay(1);
+    $('timedown').onclick = () => shiftTime(-1); $('timeup').onclick = () => shiftTime(1);
+    $('dayslider').addEventListener('wheel', (e) => { e.preventDefault(); shiftDay(K.wheelDir(e.deltaY)); }, { passive: false });
+    $('timeslider').addEventListener('wheel', (e) => { e.preventDefault(); shiftTime(K.wheelDir(e.deltaY)); }, { passive: false });
+    const jumps = {
+      now: () => Date.now(),
+      open: () => K.nyToMs(K.nyParts(shownMs()).day, 9 * 60 + 30),
+      close: () => K.nyToMs(K.nyParts(shownMs()).day, 16 * 60),
+    };
+    document.querySelectorAll('[data-jump]').forEach(b => b.onclick = () => {
+      if (b.dataset.jump === 'expiry') pinNextExpiry();
+      else selectMs(jumps[b.dataset.jump]());
+    });
+  }
+  function bindIvShift() {
+    const slider = $('ivshift'), box = $('ivbox');
+    const show = () => { setIdle(slider, S.ivShift); setIdle(box, S.ivShift); };
+    const apply = (raw) => {
+      const v = K.snap(raw, 0.1, -20, 20);
+      if (v == null) return;
+      S.ivShift = v; show(); changed(false, 30);
+    };
+    show();
+    slider.oninput = () => apply(slider.value);
+    box.oninput = () => apply(box.value);
+    box.onblur = show;
+    stepper(slider, $('ivdown'), $('ivup'), 0.1, () => S.ivShift, apply);
+    $('ivreset').onclick = slider.ondblclick = () => apply(0);
+  }
+  function bindRange() {
+    const slider = $('range'), box = $('rangebox');
+    const apply = (raw) => {
+      const v = K.snap(raw, 0.5, 0.5, 60);
+      if (v == null) return;
+      S.rangeAuto = false; S.range = v; rangeLabel(); changed(false, 30);
+    };
+    const auto = () => { S.rangeAuto = true; rangeLabel(); changed(false, 30); };
+    slider.oninput = () => apply(slider.value);
+    box.oninput = () => apply(box.value);
+    box.onblur = rangeLabel;
+    stepper(slider, $('rangedown'), $('rangeup'), 0.5, effRange, apply);
+    $('rangereset').onclick = slider.ondblclick = auto;
+    rangeLabel();
+  }
+
+  function showView(view) {
+    S.view = view;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.view === view));
+    try { OptionDash.onView(view); } catch (e) { console.error('view hook failed', e); }  // add-ons must never stop the switch
+    // For add-ons that need every switch (tvpanel.js swaps the plot for the price chart). Sent before
+    // renderChart so the plot is visible again, at its real size, when it is redrawn.
+    window.dispatchEvent(new CustomEvent('od:view', { detail: { view } }));
+    save(); renderChart();
+  }
+
+  // Hooks the add-on scripts replace: afterLegs (market.js), afterRun and payoffExtras (earnpanel.js),
+  // onView and greekFrame (greekplay.js)
+  window.OptionDash = { S, changed, setStatus, legsChanged, dteSub, pricingBody, showView, tLabel,
+    result: () => R, redrawChart: () => renderChart(),
+    afterLegs: () => {}, afterRun: () => {}, payoffExtras: () => ({ traces: [], shapes: [], note: '' }),
+    onView: () => {}, greekFrame: () => null };
+  bindHeader();
+  if (!S.legs.length) S.legs = PRESETS['Iron Condor']();
+  // A loaded symbol brings its real spot. Legs that are still a pure what-if shape (no link, no
+  // typed price) were drawn for the old spot, e.g. the 5800 placeholder; re-draw them around the
+  // new one, or Sync would link far-away contracts (or two legs to the same one).
+  window.addEventListener('od:symbol', (e) => {
+    const d = e.detail || {};
+    const next = ODPresets.recentre(S.legs, d.prevSpot, S.spot, roundK);
+    if (!next) return;
+    S.legs = next; S.tSel = null; S.tPin = null;
+    changed(true);
+    setStatus(`legs re-centred on ${d.symbol} at ${fmt(S.spot)} (they were drawn for ${fmt(d.prevSpot)})`, false, 8000);
+  });
+  renderLegs();
+  run();
+})();
+</script>
+<script src="/analyser/market.js"></script>
+<script src="/analyser/earnings.js"></script>
+<script src="/analyser/earnpanel.js"></script>
+<script src="/analyser/greekframes.js"></script>
+<script src="/analyser/greekplay.js"></script>
+<script src="/analyser/journallink.js"></script>
+<script src="/analyser/journalui.js"></script>
+<script src="/analyser/savedanalyses.js"></script>
+<script src="/analyser/savedui.js"></script>
+<script src="/analyser/position.js"></script>
+<script src="/analyser/positionui.js"></script>
+<script src="/shared/tvchart.js"></script>
+<script src="/analyser/tvpanel.js"></script>
+</body>
+</html>

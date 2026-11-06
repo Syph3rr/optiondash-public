@@ -1,0 +1,27 @@
+[workspace]
+members = [".", "crates/engine"]
+resolver = "3"
+
+[package]
+name = "optiondash"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Local trading platform: gateway, options analyser and modules, powered by OptionStratLib"
+
+[dependencies]
+axum = "0.8.9"
+engine = { package = "optiondash-engine", path = "crates/engine" }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tokio = { version = "1.54.1", features = ["full"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+
+# Decimal maths is slow unoptimised: build dependencies optimised even in debug,
+# so plain `cargo run` is quick too.
+[profile.dev.package."*"]
+opt-level = 3

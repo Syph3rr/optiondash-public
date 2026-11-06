@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chain &amp; screener · OptionDash</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<link rel="stylesheet" href="/chain/static/chain.css">
+<script src="/shared/nav.js"></script>
+<script src="/shared/vendor/plotly.min.js"></script>
+<script src="/chain/static/chain.js"></script>
+<script src="/shared/tvchart.js"></script>
+<script src="/chain/static/page.js" defer></script>
+</head>
+<body>
+<main class="ch">
+  <div class="ch-head">
+    <h1>Chain &amp; screener</h1>
+    <span class="grow"></span>
+    <span class="status" id="asof"></span>
+  </div>
+
+  <section class="card ch-controls">
+    <div class="field"><label for="symbol">Symbol</label><input id="symbol" class="w70" value="SPY" autocomplete="off" spellcheck="false"></div>
+    <button class="btn" id="load-symbol" type="button">Load</button>
+    <div class="field"><label for="expiry">Expiry</label><select id="expiry" disabled></select></div>
+    <div class="field"><label for="model">Model</label>
+      <select id="model"><option value="american">American</option><option value="european">European</option><option value="futures">Futures</option></select></div>
+    <div class="field"><label for="rate">Rate %</label><input id="rate" type="number" step="0.1" value="4" class="w70"></div>
+    <div class="field"><label for="divy">Div yld %</label><input id="divy" type="number" step="0.1" value="1.3" class="w70"></div>
+    <button class="btn primary" id="load-chain" type="button" disabled>Load chain</button>
+  </section>
+  <div id="message" class="card ch-msg" hidden></div>
+  <section class="card"><div class="stats" id="tiles"></div></section>
+
+  <section class="card">
+    <div class="card-h">
+      <div class="tabs" id="tabs">
+        <button class="tab on" data-view="chart" type="button">Chart</button>
+        <button class="tab" data-view="chain" type="button">Chain</button>
+        <button class="tab" data-view="skew" type="button">Skew</button>
+        <button class="tab" data-view="screener" type="button">Screener</button>
+      </div>
+      <span class="grow"></span>
+      <span class="legend-note" id="note"></span>
+    </div>
+    <div id="view-chain" class="ch-pane" hidden></div>
+    <div id="view-skew" class="ch-pane" hidden><div id="skew-plot" class="ch-plot"></div></div>
+    <div id="view-chart" class="ch-pane">
+      <div id="tv-chart" class="ch-tv"></div>
+      <p class="legend-note ch-tv-note" id="tv-note">Price chart by TradingView (delayed data, needs an internet connection). Search any symbol in the chart's own box; it also follows the symbol you Load above. Indexes (SPX, NDX, RUT, VIX) are charted from a CFD that tracks them; XSP and DJX show the full-size index.</p>
+    </div>
+    <div id="view-screener" class="ch-pane" hidden>
+      <form id="filters" class="ch-filters">
+        <div class="field"><label for="f-side">Side</label>
+          <select id="f-side"><option value="">Both</option><option value="C">Calls</option><option value="P">Puts</option></select></div>
+        <div class="field"><label for="f-dmin">|Delta| min</label><input id="f-dmin" type="number" step="0.05" min="0" max="1" class="w70"></div>
+        <div class="field"><label for="f-dmax">|Delta| max</label><input id="f-dmax" type="number" step="0.05" min="0" max="1" class="w70"></div>
+        <div class="field"><label for="f-bid">Min bid</label><input id="f-bid" type="number" step="0.05" min="0" class="w70"></div>
+        <div class="field"><label for="f-spread">Max spread %</label><input id="f-spread" type="number" step="1" min="0" class="w70"></div>
+        <div class="field"><label for="f-ivmin">IV min %</label><input id="f-ivmin" type="number" step="1" min="0" class="w70"></div>
+        <div class="field"><label for="f-ivmax">IV max %</label><input id="f-ivmax" type="number" step="1" min="0" class="w70"></div>
+        <button class="btn" id="f-reset" type="button">Reset</button>
+      </form>
+      <div id="screen-results" class="ch-scroll"></div>
+    </div>
+  </section>
+  <p class="legend-note">Each chain load holds about 50 market data lines while it snapshots, so it only runs when you press Load chain. IV is solved from the mark using the model, rate and yield above (IBKR's IV if it cannot be solved). The screener filters the loaded expiry; a multi-symbol scan, IV rank and term structure need data we do not have yet (see the README roadmap).</p>
+</main>
+</body>
+</html>

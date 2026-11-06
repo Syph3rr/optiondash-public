@@ -1,0 +1,65 @@
+.home { display: grid; gap: 14px; padding: 18px 22px 48px; max-width: 1400px; margin: 0 auto; }
+.home-head { display: flex; align-items: center; gap: 12px; }
+.home-head h1 { margin: 0; font-size: 18px; font-weight: 650; }
+/* Cards in a row stretch to the tallest, so rows end level. */
+.home-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.wd-2 { grid-column: span 2; } .wd-3 { grid-column: span 3; }
+@media (max-width: 1100px) { .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wd-3 { grid-column: span 2; } }
+@media (max-width: 700px) { .home-grid { grid-template-columns: 1fr; } .wd-2, .wd-3 { grid-column: span 1; } }
+.wd-body { padding: 12px 14px; min-height: 90px; }
+.wd-body.flush { padding: 0; }
+.wd-link { font-size: 11.5px; color: var(--blue); text-decoration: none; }
+.wd-link:hover { text-decoration: underline; }
+.wd-err { color: var(--neg); font-size: 12px; }
+.wd-muted { color: var(--faint); font-size: 12px; }
+.wd-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 14px; }
+.wd-kpi .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.wd-kpi .v { font: 600 22px/1.25 var(--mono); margin-top: 4px; }
+.wd-kpi .s { font: 11px var(--mono); color: var(--faint); margin-top: 2px; }
+.wd-plot { height: 210px; }
+.wd-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+.wd-links h3 { margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--faint); font-weight: 600; }
+.wd-links a, .wd-links span { display: block; padding: 4px 0; font-size: 13px; text-decoration: none; color: var(--text); }
+.wd-links a:hover { color: var(--accent); }
+.wd-links span { color: var(--faint); }
+.tws-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--faint); margin-right: 8px; }
+.tws-dot.ok { background: var(--pos); box-shadow: 0 0 0 3px var(--pos-bg); }
+.tws-dot.err { background: var(--neg); box-shadow: 0 0 0 3px var(--neg-bg); }
+
+/* ---------- layout editing (Edit layout ... Done) ---------- */
+.home-tools { display: inline-flex; gap: 8px; align-items: center; }
+.home-tools[hidden] { display: none; }
+.home-add { background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 6px; height: 30px; padding: 0 8px; color: var(--text); }
+.wd-drag, .wd-tools { display: none; }
+.home.editing .wd-drag { display: inline-block; cursor: grab; color: var(--faint); font-size: 15px; line-height: 1; padding: 0 2px; user-select: none; }
+.home.editing .wd-drag:hover { color: var(--accent); }
+.home.editing .wd-tools { display: inline-flex; gap: 4px; margin-left: 8px; }
+.home.editing .grid > .card, .home.editing .home-grid > .card { outline: 1px dashed var(--line-2); outline-offset: 2px; }
+.wd-tool { height: 24px; min-width: 24px; padding: 0 7px; font-size: 11.5px; border-radius: 6px; cursor: pointer;
+  background: var(--panel-2); border: 1px solid var(--line-2); color: var(--muted); white-space: nowrap; }
+.wd-tool:hover { color: var(--text); border-color: var(--muted); }
+.wd-ghost { opacity: .35; }
+.wd-chosen { box-shadow: var(--shadow-pop); }
+.wd-dragging { opacity: .9; box-shadow: var(--shadow-pop); }
+.home.editing .wd-drag { touch-action: none; }
+
+/* ---------- header: TWS status pill (the TWS card itself is an optional add-on) */
+.tws-pill { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border-radius: 999px;
+  border: 1px solid var(--line-2); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.tws-pill:empty { display: none; }
+.tws-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.tws-pill.ok { color: var(--text); } .tws-pill.ok::before { background: var(--pos); box-shadow: 0 0 0 3px var(--pos-bg); }
+.tws-pill.err::before { background: var(--neg); }
+@media (max-width: 700px) { .home-head { flex-wrap: wrap; } }
+
+/* ---------- header: account filter (picker from /shared/accounts.js) and what it hides */
+.home-acc-note { font-size: 11.5px; color: var(--faint); white-space: nowrap; }
+.home-acc-note[hidden] { display: none; }
+.home-acc:empty { display: none; }
+/* While editing the layout the header holds Add card / Reset / Done; the filter waits. */
+.home.editing .home-acc { display: none; }
+.wd-kpis.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.wd-kpis.two .v { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wd-kpis.two .s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wd-idle { display: grid; gap: 6px; padding: 18px 0; text-align: center; }
+.wd-idle strong { font-size: 13px; font-weight: 600; }
